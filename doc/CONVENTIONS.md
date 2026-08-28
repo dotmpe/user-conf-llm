@@ -1,29 +1,17 @@
 This is the initial CONVENTIONS document.
 
 - Source and generated code is primarily Bash.
-- Documentation is Markdown.
+- Documentation is written in Markdown.
 
 
 # Naming conventions
-Names should be strict. Some special considerations:
 
-* Strict complang compatible ids are favorable: ``[A-Za-z_][A-Za-z0-9_]*``
-
-- Hyphens in names refer to special and magical things. A resource, an entry
-  point, an option argument. Reserve it, for example to signal that a certain
-  command can exist as several identities (executable, alias, function) at
-  once.
-
-- Periods are already overloaded with meanings; its a good general purpose
-  (blank) space alternative.
-
-- Use . / ~ otherwise with the conservative meaning(s), only to be amended for
-  new contexts where appropriate but not changed.
-
-* The same goes for many special ASCII characters, their usefulness is as
-  decorative mnemonic but all too many combinations will overload that.
-  Recognition is a factor, also in that the smaller the presence is, the harder
-  it might be to spot or find.
+- In general all names should be strict: ``[A-Za-z_][A-Za-z0-9_]*``.
+- Directories, file names, functions and variable names, all follow the strict rule, with some specific exceptions.
+- Filenames follow standard rules. They can one or more .ext tags, denoting format, encoding, etc. And they must have at least one.
+- Other characters are special, but sometimes permissible. Hyphens are specifically included in names to signal a special status.
+  
+Refer to [MANIFEST.md](MANIFEST.md) for a detailed guide on naming.
 
 
 # Code Structure
