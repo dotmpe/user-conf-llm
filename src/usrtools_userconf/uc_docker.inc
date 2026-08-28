@@ -8,43 +8,61 @@
 : env "${_E_GAE:=193}" "${_E_MA:=194}"
 }
 ./_hooks() {
-: -A; }
+: FIXME : -A
+}
 ./_hooks/declare() {
-: "${UC_DOCKER_CACHE:=${CACHE_DIR:-.local/cache}}"
-: "${UC_DOCKER_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
-: "${UC_DOCKER_IMGCONF:=${UC_DOCKER_DATADIR:?}/uc_docker_imgconfig.data.bash}"
-: "${UC_DOCKER_IMGCONF_MAPSPEC:=uc_docker_imgconf_{from,packages,extra}}"
+: env "${UC_DOCKER_CACHE:=${CACHE_DIR:-.local/cache}}"
+: env "${UC_DOCKER_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
+: env "${UC_DOCKER_IMGCONF:=${UC_DOCKER_DATADIR:?}/uc_docker_imgconfig.data.bash}"
+: env "${UC_DOCKER_IMGCONF_MAPSPEC:=uc_docker_imgconf_{from,packages,extra,settings\}}"
   declare -ga uc_docker_imgconf_assocs
 }
 ./_hooks/init() {
-  \builtin read -ra uc_docker_imgconf_assocs < <(. <(echo echo ${UC_DOCKER_IMGCONF_MAPSPEC:?})) &&
-  cache_loadmaps "${UC_DOCKER_CACHE:?}" "${uc_docker_imgconf_assocs[@]:?}"
+  \builtin read -ra uc_docker_imgconf_assocs < <(
+    \builtin . <(echo echo ${UC_DOCKER_IMGCONF_MAPSPEC:?})) &&
+  cache_loadmaps "${UC_DOCKER_IMGCONF:?}" "${uc_docker_imgconf_assocs[@]:?}"
 }
 
 ./build() {
+: about 'Build docker image from configuration'
 : param '~ <From-config> ...'
   (($#)) || return ${_E_MA:?}
 : input "${1:?$FUNCNAME${*:+ ${*@Q}}: Configuration key expected}"
   local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
   local -n __imgconf_packages='uc_docker_imgconf_packages[$imgconf_key]'
   local -n __imgconf_extra='uc_docker_imgconf_extra[$imgconf_key]'
-  local imgconf_key=${1} dckr_file
+  local -n __imgconf_settings='uc_docker_imgconf_settings[$imgconf_key]'
+  local imgconf_key=${1} dckrfile_path
 
-  dckr_file=${UC_DOCKER_CACHE}/dockerfile-${1}.xyz
-  local dockerfile_path="${dckr_file}"
-  
+  dckrfile_path=${UC_DOCKER_CACHE}/dockerfile-${1}
+  [[ -w ${dckrfile_path%/*} ]] ||
+    failerr "Target directory not writable: ${dckrfile_path@Q}" || return
+
   {
     echo "FROM ${__imgconf_from}"
-    echo "RUN apt-get update && apt-get install -y ${!__imgconf_packages}"
-    echo "COPY . /app"
-    echo "WORKDIR /app"
-    echo "CMD [\"/bin/bash\"]"
-  } > "${dockerfile_path}"
+    if [[ ${__imgconf_packages:+set} ]]; then
+      echo "RUN apt-get update && \
+        apt-get install -y --no-install-recommends \
+        ${__imgconf_packages} && \
+        rm -rf /var/lib/apt/lists/*"
+    fi
+    #if [[ ${__imgconf_appcopy:+set} ]]; then
+    #  echo "COPY . /app"
+    #  echo "WORKDIR /app"
+    #fi
+    #if [[ ${__imgconf_entrypoint:+set} ]]; then
+    #  echo "ENTRYPOINT ${__imgconf_entrypoint:?}"
+    #fi
+    #if [[ ${__imgconf_defcmd:+set} ]]; then
+    #  echo "CMD ${__imgconf_defcmd:?}"
+    #fi
+  } > "${dckrfile_path}" &&
 
-  docker build -t "${imgconf_key}" -f "${dockerfile_path}" .
+  docker build -t "${imgconf_key}" -f "${dckrfile_path}" .
 }
 
 ./new_config() {
+: about 'Create new docker image configuration'
 : param '~ <Config-key> <From-image> [<packages> [options...]]'
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
@@ -57,21 +75,23 @@
   local imgconf_key=${1} imgconf_base=${2}
 
   shift 2 || return ${_E_GAE:?}
-  cache_updatemap "${UC_DOCKER_CACHE:?}" "${!__imgconf_from}" "${imgconf_base}" ||
+  [[ ! ${__imgconf_from:+set} ]] ||
+    failerr "Configuration ${imgconf_key@Q} already exists" || return
+  cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_from}" "${imgconf_base}" ||
     failerr "E$? during save" || return
   while (($#)); do
   case "$1" in
     ( '' ) false ;;
     ( [!-]* )
         if [[ ! ${__imgconf_packages:+set} ]]; then
-          cache_updatemap "${UC_DOCKER_CACHE:?}" "${!__imgconf_packages}" "${1}" ||
+          cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_packages}" "${1}" ||
             return
           shift
         else false
         fi
       ;;
     ( --extra )
-        cache_updatemap "${UC_DOCKER_CACHE:?}" "${!__imgconf_extra}" "${3}" ||
+        cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_extra}" "${3}" ||
           return
         shift 2 || return ${_E_GAE:?}
       ;;
@@ -83,6 +103,7 @@
 : param '~ <Config-key> <options and params for config...>'
   TODO
 }
+
 ./start() {
 : about 'Start temporary, new container from image and attach'
 : param '~ <Config-key> <options and params for container or special (entrypoint)...>'
