@@ -31,7 +31,17 @@
   local imgconf_key=${1} dckr_file
 
   dckr_file=${UC_DOCKER_CACHE}/dockerfile-${1}.xyz
-  TODO "build from base $__imgconf_from with packages, at sensible location"
+  local dockerfile_path="${dckr_file}"
+  
+  {
+    echo "FROM ${__imgconf_from}"
+    echo "RUN apt-get update && apt-get install -y ${!__imgconf_packages}"
+    echo "COPY . /app"
+    echo "WORKDIR /app"
+    echo "CMD [\"/bin/bash\"]"
+  } > "${dockerfile_path}"
+
+  docker build -t "${imgconf_key}" -f "${dockerfile_path}" .
 }
 
 ./new_config() {
