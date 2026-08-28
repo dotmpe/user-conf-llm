@@ -1,3 +1,17 @@
+# Log, cache and other local, special purpose dirs hidden from SCM
+.meta/build
+.meta/cache
+.meta/log
+.meta/mnt
+.meta/sync
+.meta/data/local
+.meta/data/user
+# XXX: I think for me and my most purposes, I should start using .local, not .meta
+
+# C tags... for generators that don't use already prepared hidden dirs
+.tags
+tags
+
 # Compiled Lua sources
 luac.out
 

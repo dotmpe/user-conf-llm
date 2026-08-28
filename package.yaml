@@ -1,0 +1,20 @@
+---
+- name: dotmpe/user-conf-llm
+  label: User-Conf repository for LLM
+  description: Draft for tooling configuration and context specification
+  shell:
+    aliases:
+      aider+user: |
+        : Id usrtools_user-conf::docker-aider_als::aider+user
+        [[ -d .meta/stat/index ]] || failerr "not in a basedir" || return;
+        aider \
+         --no-show-release-notes --no-gitignore \
+         --input-history-file .local/user/input/aider.input.history \
+         --chat-history-file .local/user/chat/aider.chat.history.md \
+         --config $HOME/.local/share/dotfiles/etc/aider/aider.conf.yml
+
+      aider: 'aider+user'
+    scripts: {}
+  scm-ignores: .gitignores
+  source: dotmpe/user-conf-llm.git
+  created: "[Fri 28] [35'26] [2026-08-28] [01:01Z]"
