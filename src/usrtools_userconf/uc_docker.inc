@@ -101,7 +101,13 @@
 
 ./update_config() {
 : param '~ <Config-key> <options and params for config...>'
-  TODO
+  local imgconf_key=${1}
+  shift || return ${_E_GAE:?}
+
+  local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
+  local -n __imgconf_extra='uc_docker_imgconf_extra[$imgconf_key]'
+  
+  docker run --rm -it "${__imgconf_from}" "${@}" 
 }
 
 ./start() {
