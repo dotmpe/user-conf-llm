@@ -1,0 +1,22 @@
+id: http://wtwta.org/project/user-scripts
+#id: http://wtwta.org/project/user-scripts-incubator
+name: user-scripts
+prefixes:
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+  ORCID: https://orcid.org
+  userscripts: http://wtwta.org/project/user-scripts#
+imports:
+  - linkml:types
+default_curi_maps:
+  - semweb_context
+default_prefix: userscripts
+default_range: string
+
+classes:
+  Lib:
+  
+#enums:
+#slots:
+
+# userscripts_schema.yml @linkml [2026-07-21]

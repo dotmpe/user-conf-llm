@@ -1,0 +1,1 @@
+../../../.local/etc/vim/templates/=template=.group.bash
