@@ -17,8 +17,7 @@
          --chat-history-file .local/user/data/chat/aider.chat.history.md \
          --config $HOME/.local/share/dotfiles/etc/aider/aider.conf.yml'
 
-      aider+unsane:
-        aider+user --no-show-model-warnings
+      aider+unsane: aider+user --no-show-model-warnings --auto-commits
 
       aider: 'aider+user'
     scripts: {}
