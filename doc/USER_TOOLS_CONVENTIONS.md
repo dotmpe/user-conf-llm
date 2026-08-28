@@ -1,12 +1,18 @@
-# +User-Tools conventions
+---
+title: Project conventions (+User-Tools edition)
+status: draft
+category: [ convention ]
+audience: [ developer ]
+tag: 
+---
 
-Status: initial high-level conventions for the +User-Tools project family.
+Initial high-level conventions for the +User-Tools project family.
 
-This document is intended to become `doc/CONVENTIONS.md` in the future `+User-Tools` project. Until that project is established, it is kept here as a working home for the shared conventions of the related repositories.
+NOTE: This document is intended to become `doc/CONVENTIONS.md` in the future `+User-Tools` project. Until that project is established, it is kept here as a working home for the shared conventions of the related repositories.
 
 ## Project family
 
-The `+User-Tools` organisation covers tools for consoles and systems with interpreters. It began as a toolkit for Bash profiles and script environments, but its scope may include other interpreter-based environments over time.
+The `+User-Tools` organisation covers tools for consoles and systems with interpreters. It began as a toolkit for Bash profiles and script environments, but its scope may grow to include other interpreter-based environments over time.
 
 The project family currently includes:
 
@@ -15,7 +21,8 @@ The project family currently includes:
 - **+User-Conf** — configuration-oriented material and derived environments.
 - Other derived, auxiliary, or third-party projects as the structure develops.
 
-Repository identity and namespace identity are separate concerns. A repository may provide one or more namespace layers, while a namespace layer may be assembled from several repositories or sparse trees.
+A repository can contribute to one more namespace layers, while the namespace layer is assembled from several repositories, sparse trees, etc.
+More exact distinctions and definitions are to be given in NS_CONVENTIONS and individual schema formats
 
 ## Goals
 
@@ -25,12 +32,15 @@ The reusable core should support:
 
 - loading on vanilla Bash;
 - integration with system and user profiles;
-- selectable interactive modules, including `PS1`, terminal, VTE, Bash, and user conveniences;
-- text-based UI and console environments;
+- selectable modules, including to setup for interactive sessions (`PS1`, terminal, VTE, Bash, and with user conveniences)
 - layered configuration and data lookup;
 - derived distributions that contain source without requiring every data collection.
 
-The intended result is a set of local and private systems which can combine public, private, and separately licensed source or data without making private material a requirement of the public core.
+The intended result is a set of local and private systems.
+
+That can combine public, private, and separately licensed source or data without making private material a requirement of the public core.
+
+And focused on Bash (currently), but that may branch to support data driven text-based UI and console environments in general.
 
 ## Scope
 
@@ -41,23 +51,62 @@ The initial implementation scope is:
 - Unix-style command-line tools;
 - text-based and terminal-oriented workflows.
 
-Other interpreters or platforms may be supported later, but should not complicate the initial Bash-oriented conventions.
+Other interpreters or platforms could be supported later, but it is a Bash oriented workflow that is the focus for current development.
+This can move to focus on subset-languages and -systems later, but those would in essence follow the existing toolkit, and not complicate the initial Bash-oriented conventions or provide upgrade/transition paths.
 
 ## Source and project layout
 
-The following directory roles are preferred, but are not an absolute requirement for every repository:
+This section is preceded by some principles listed in [DIR CONVENTIONS],
+referring FHS/Debian/XDG for overall context and user-tools rules and style.
+
+The main flow(s) for this project can be put down to one or more invocations (specified separately),
+but the more elemental view is that of *files* (and other kinds of nodes, like build *targets*) on the following sequence of paths:
 
 - `src/` — canonical local source tree;
-- `tool/` — convenient, replaceable development and maintenance tools;
-- `lib/` — reusable library material;
-- `inc/` — composable include material;
-- `conf/` — configuration templates and defaults;
-- `schema/` — format and data definitions;
-- `doc/` — conventions, reference material, and project documentation;
+- `pack/` — generated source and related artefacts/manifests;
 - `test/` — tests and verification;
-- `dist/` — generated or package-oriented output.
+- `dist/` — packaged artefacts for distribution.
 
-`tool/` is considered replaceable infrastructure. It may be rewritten or replaced without changing the conceptual status of the source in `src/`.
+Content goes in as source files, is produced into intermediaries, then tested, and then is archived/compressed in some format for distribution with some packager or simpler installer method. 
+
+(Ie. config/install scripts can copy intermediate artefacts directly, but probably some dist envelope is preferable as input for those)
+
+Aside of the basic flow, there are additional more auxiliary roles:
+
+- `conf/` — configuration templates and defaults;
+- `doc/` — conventions, reference material, and project documentation;
+- `inc/` — composable include material;
+- `lib/` — reusable library material;
+- `schema/` — format and data definitions;
+
+Through lookup paths, none of the exact paths is per se the 'canonical' base,
+and the above especially are a bit more fuzzy than the basic flow,
+influenced by context more than prescribed here.
+
+Important to the current ``configure+skeleton.bash`` setup:
+
+- ``.local`` to put cache, build, user state and config, and other temp
+
+- `tool/` for files used in tool chain that do not fit the above.
+  but also for dev/source installations where work tree files
+  are not just reference/editable but deployed/currently loaded working files.
+
+  As such those need some special consideration,
+
+  in general for the `tool/*/<tag>/` it should be declared
+  if it is a layer in some
+  name space
+  for current/working
+
+  and for `tool/local` specifically that is used as a vanilla/blank starting
+  point
+
+  I guess tag can correspond to those dir names specified above
+
+    - `part/` for certain `.group.bash` files still
+    - `lib/` for .lib.bash or .lib.sh
+
+  So some must be declared and coordinated
 
 ## Layered trees and lookup paths
 
@@ -128,3 +177,7 @@ Where practical, files should carry an SPDX identifier or be covered by a clear 
 ## Current status
 
 This is pre-existing development material undergoing reorganisation. The historical +User-Scripts project remains the implementation and compatibility home for the current script collection. The future +User-Tools project will provide the clearer home for these high-level conventions and the shared namespace model.
+
+---
+status: proposal
+tag: temporary review
