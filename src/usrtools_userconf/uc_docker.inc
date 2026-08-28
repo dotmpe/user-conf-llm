@@ -27,29 +27,34 @@
 : about 'Build docker image from configuration'
 : param '~ <From-config> ...'
   (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Configuration key expected}"
+: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
   local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
   local -n __imgconf_packages='uc_docker_imgconf_packages[$imgconf_key]'
   local -n __imgconf_extra='uc_docker_imgconf_extra[$imgconf_key]'
   local -n __imgconf_settings='uc_docker_imgconf_settings[$imgconf_key]'
   local imgconf_key=${1} dckrfile_path
 
-  dckrfile_path=${UC_DOCKER_CACHE}/dockerfile-${1}
+  dckrfile_path=${UC_DOCKER_CACHE}/uc_docker_imgconf-${1//[^A-Za-z0-9_]/_}.dockerfile
   [[ -w ${dckrfile_path%/*} ]] ||
     failerr "Target directory not writable: ${dckrfile_path@Q}" || return
 
+  # TODO: Parse any extension settings
+  
   {
     echo "FROM ${__imgconf_from}"
     if [[ ${__imgconf_packages:+set} ]]; then
-      echo "RUN apt-get update && \
-        apt-get install -y --no-install-recommends \
-        ${__imgconf_packages} && \
+      echo "RUN apt-get update && \\
+        apt-get install -y --no-install-recommends \\
+        ${__imgconf_packages} && \\
         rm -rf /var/lib/apt/lists/*"
     fi
     #if [[ ${__imgconf_appcopy:+set} ]]; then
     #  echo "COPY . /app"
     #  echo "WORKDIR /app"
     #fi
+    if [[ ${__imgconf_extra:+set} ]]; then
+      echo "${__imgconf_extra:?}"
+    fi
     #if [[ ${__imgconf_entrypoint:+set} ]]; then
     #  echo "ENTRYPOINT ${__imgconf_entrypoint:?}"
     #fi
@@ -58,7 +63,7 @@
     #fi
   } > "${dckrfile_path}" &&
 
-  docker build -t "${imgconf_key}" -f "${dckrfile_path}" .
+  \builtin command docker build -t "${imgconf_key}" -f "${dckrfile_path}" .
 }
 
 ./new_config() {
@@ -67,7 +72,7 @@
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
   (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Configuration key expected}"
+: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
 : input "${2:?$FUNCNAME${*:+ ${*@Q}}: Base image reference expected}"
   local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
   local -n __imgconf_packages='uc_docker_imgconf_packages[$imgconf_key]'
@@ -91,7 +96,8 @@
         fi
       ;;
     ( --extra )
-        cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_extra}" "${3}" ||
+        [[ ${2:+set} ]] || failerr "Empty argument after ${1@Q}" || return
+        cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_extra}" "${2}" ||
           return
         shift 2 || return ${_E_GAE:?}
       ;;
@@ -101,18 +107,20 @@
 
 ./update_config() {
 : param '~ <Config-key> <options and params for config...>'
-  local imgconf_key=${1}
-  shift || return ${_E_GAE:?}
-
-  local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
-  local -n __imgconf_extra='uc_docker_imgconf_extra[$imgconf_key]'
-  
-  docker run --rm -it "${__imgconf_from}" "${@}" 
+  TODO
 }
 
 ./start() {
 : about 'Start temporary, new container from image and attach'
 : param '~ <Config-key> <options and params for container or special (entrypoint)...>'
-  TODO
+  (($#)) || return ${_E_MA:?}
+: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
+  local imgconf_key=${1}
+
+  \builtin command docker run \
+    -v $PWD:/project:rw \
+    --workdir /project \
+    --rm -it "${imgconf_key}" "${@:2}" 
 }
+
 # Id: uc_docker                          vim:set ft=bash sw=2 sts=2 et:
