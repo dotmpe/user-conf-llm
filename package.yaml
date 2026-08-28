@@ -6,12 +6,15 @@
     aliases:
       aider+user: |
         : Id usrtools_user-conf::docker-aider_als::aider+user
-        [[ -d .meta/stat/index ]] || failerr "not in a basedir" || return;
-        aider \
+        [[ -d .local/user/data ]] || failerr "not in a basedir" || return;
+        \builtin command aider \
          --no-show-release-notes --no-gitignore \
-         --input-history-file .local/user/input/aider.input.history \
-         --chat-history-file .local/user/chat/aider.chat.history.md \
-         --config $HOME/.local/share/dotfiles/etc/aider/aider.conf.yml
+         --input-history-file .local/user/data/input/aider.input.history \
+         --chat-history-file .local/user/data/chat/aider.chat.history.md \
+         --config $HOME/.local/share/dotfiles/etc/aider/aider.conf.yml'
+
+      aider+unsane:
+        aider+user --no-show-model-warnings
 
       aider: 'aider+user'
     scripts: {}

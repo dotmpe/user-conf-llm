@@ -1,1 +1,1 @@
-/src/local/conf-mpe+dev/etc/vim/templates/us-part.bash
+../../../.local/etc/vim/templates/=template=.group.bash

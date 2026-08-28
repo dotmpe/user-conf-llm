@@ -1,16 +1,22 @@
-# Log, cache and other local, special purpose dirs hidden from SCM
-.meta/build
-.meta/cache
-.meta/log
-.meta/mnt
-.meta/sync
-.meta/data/local
-.meta/data/user
-# XXX: I think for me and my most purposes, I should start using .local, not .meta
+# Log, cache and other local, special purpose dirs hidden from SCM et al
+.local/build
+.local/cache
+.local/log
+.local/mnt
+.local/sync
+.local/user/data
+.local/var
+# XXX: Not sure where user data could/should live.
 
 # C tags... for generators that don't use already prepared hidden dirs
 .tags
 tags
+
+# Vim swap files
+*.sw[pon]
+
+# Aider's one path that doesn't seem to configure externally?
+.aider.tags.cache.v4
 
 # Compiled Lua sources
 luac.out
