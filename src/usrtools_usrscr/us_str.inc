@@ -3,12 +3,13 @@ String() {
 }
 
 .case-insensitive-glob() {
-: param '~ <Glob-var> [<Glob-pattern-value>]'
+: param '~ <Glob-var> [<Glob-pattern-value>] ...'
 : about 'Build glob for given glob that is completely case-insensitive'
 : extended 'This is only for ASCII, unicode support would be more involved'
 : input "${1:?$(:argv-err 1 'Glob variable')}"
   local -n _us_str_glob1=${1}
   [[ ${2:+set} ]] && _us_str_in1=${2} || _us_str_in1=${_us_str_glob1}
+: input "${_us_str_in1:?$(:unset-err $_us_str_in1 "String value")}"
   _us_str_glob1=
   while read -r -n 1 _us_str_char1
   do
@@ -45,21 +46,23 @@ String() {
 : param ' ~ <Split-match> <Var-name> ...'
   : XXX 'Splits can be character ranges, but then those should reverse properly'
 : id str/globreverse
-: input "${1:?$FUNCNAME: Split match}"
-: input "${2:?$FUNCNAME:$1: Variable name}"
+: input "${1:?$(:argv-err 1 'Split match')}"
+: input "${2:?$(:argv-err 2 'String name')}"
   local -n __globreverse_ref="${2}"
-  User-Script.String.globreverse-from "${1}" "${__globreverse_ref}" "${2}"
+  .globreverse-from "${1}" "${__globreverse_ref}" "${2}"
 }
 
 .globreverse-from() {
 : about 'Bash quick reverse of concatenated strings'
 : param ' ~ <Split-match> <From-value> <To-var> ...'
-: input "${1:?$FUNCNAME: Split match}"
-: input "${2:?$FUNCNAME:$1: Variable name}"
-  local __globreverse_tmp=${2:?$FUNCNAME:$1: Value to reverse}
-  local -n __globreverse_to="${3:?}"
+: input "${1:?$(:argv-err 1 'Split match')}"
+: input "${2:?$(:argv-err 2 'Source variable name')}"
+: input "${3:?$(:argv-err 3 'Destination variable name')}"
+  local __globreverse_tmp=${2}
+  local -n __globreverse_to=${3}
   local __globreverse_val
-  while User-Script.String.globmatch "*${1}*" "$__globreverse_tmp"
+  while
+    .globmatch "*${1}*" "$__globreverse_tmp"
   do
     #shellcheck disable=SC2295  # Match expansion from var is the idea here
     : "${__globreverse_tmp##*${1}}"
@@ -76,17 +79,20 @@ String() {
 .globreverse-replace() {
 : about 'Reverse at and replace separator'
 : param ' ~ <Split-match> <New-sep> <Value> <Var-to> ...'
+: input "${1:?$(:argv-err 1 'Split match')}"
+: input "${2:?$(:argv-err 2 'New separator')}"
+: input "${3:?$(:argv-err 3 'String value')}"
+: input "${4:?$(:argv-err 4 'Destination variable name')}"
   local -n __globreverse_tr_to=${4}
-  User-Script.String.globreverse-from "${1}" "${3}" "${4}" &&
+  .globreverse-from "${1}" "${3}" "${4}" &&
   __globreverse_tr_to=${__globreverse_tr_to//$1/$2}
 }
 
 .globstrip-charsleft() {
 : param '~ <String-name> [<Match-expression>] ...'
-  (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: String name expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'String name')}"
   local -n _us_gs_cl_str=${1:?}
-: input "${_us_gs_cl_str:?$FUNCNAME${*:+ ${*@Q}}: String value expected, $ENV_CTX}"
+: input "${_us_gs_cl_str:?$(:unset-err $_us_gs_cl_str "String value")}"
   local _us_gs_cl_prefc=${2:-"[ ]"}
 
   \inline .inner
@@ -104,7 +110,7 @@ String() {
 
 .globstrip-charsleft.str() {
 : param '~ <String-value> [<Match-expression>] ...'
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: String value expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'String value')}"
   local _us_gs_cl_str=${1}
   local _us_gs_cl_prefc=${2:-"[ ]"}
 
@@ -113,9 +119,8 @@ String() {
 }
 
 .globstrip-charsright() {
-  : param '~ <String> [<Match-expression>] ...'
-  (( $#)) || return ${_E_MA:?}
-  : input "${1:?$FUNCNAME${*:+ ${*@Q}}: String value expected, $ENV_CTX}"
+: param '~ <String> [<Match-expression>] ...'
+: input "${1:?$(:argv-err 1 'String value')}"
   local sufc=${2:-"[ ]"} str="${1}"
   while
     .globmatch "$str" "*$sufc"
@@ -128,19 +133,26 @@ String() {
 }
 
 .join-str() {
-: param '<Dest> <Sep> <Str...>'
+: param '~ <Dest> <Sep> <Str...>'
 : about 'Wrapper for join-array to insert via arguments'
 : completion 'complete -A arrayvar'
+: input "${1:?$(:argv-err 1 'Destination name')}"
+: input "${2:?$(:argv-err 2 'Separator value')}"
+: input "${3:?$(:argv-err 3 'String value(s)')}"
   local -a _us_str_a1=( "${@:3}" )
-  User-Script.String.join-array "${1}" _us_str_a1 "${2}"
+
+  .join-array "${1}" _us_str_a1 "${2}"
 }
 
 .join-array() {
-: param '<Dest> <Src-arr> [<Sep>] ...'
+: param '~ <Dest> <Src-arr> [<Sep>] ...'
 : completion 'complete -A arrayvar'
-  local -n _us_str_d2=${1-}
-  local -n _us_str_a2=${2-}
+: input "${1:?$(:argv-err 1 'Destination name')}"
+: input "${2:?$(:argv-err 2 'Source name')}"
+  local -n _us_str_d2=${1}
+  local -n _us_str_a2=${2}
   local _us_str_s2
+
   _us_str_d2=${_us_str_a2[0]}
   for _us_str_s2 in "${_us_str_a2[@]:1}"
   do
@@ -150,19 +162,20 @@ String() {
 
 .line-slice() {
 : param '~ <Column-offset> <Columns-width> ...'
-: input "${1?$FUNCNAME${*:+ ${*@Q}}: Slice offset}"
-: input "${2?$FUNCNAME${*:+ ${*@Q}}: Slice size}"
+: input "${1?$(:argv-err 1 'Column offset')}"
+: input "${2:?$(:argv-err 2 'Columns width')}"
   local start=${1:-0} len=${2} line
-  while read -r line
-  do
+
+  while read -r line; do
     [[ ${len:+set} ]] &&
-    echo "${line: $start:$len}" ||
-      echo "${line: $start}"
+    echo "${line: $start:$len}" || echo "${line: $start}"
   done
 }
 
 .line-surround() {
-: param '~ Prefix Suffix [Dest] [Input]'
+: param '~ Prefix Suffix [Dest] [Input] ...'
+: input "${1:?$(:argv-err 1 'Prefix value')}"
+: input "${2:?$(:argv-err 2 'Suffix value')}"
   local _us_str_ls_in __us_str_dest
   local -n _us_str_ls_dest=${3:-__us_str_dest}
   # XXX: use dest as optional source perhaps
@@ -171,6 +184,7 @@ String() {
   else
     _ read -rd '' _us_str_ls_in
   fi
+
   [[ ${_us_str_ls_in:+set} ]] ||
     failerr "$FUNCNAME: Empty input" || return
   : "${_us_str_ls_in}"
@@ -181,8 +195,7 @@ String() {
 }
 
 .map-normalize() {
-: about ''
-: param '~ <Pattern-map> <Variable> [<Destination-variable>]'
+: param '~ <Pattern-map> <Variable> [<Destination-variable>] ...'
   local _us_str_mapname=${1:?} _us_str_varname=${2:?} _us_str_outname=${3:-$2}
   local -n _us_str_varref=${2} _us_str_outref=${3:-$2}
   if sh_fun "$1"; then
@@ -209,7 +222,8 @@ String() {
 : param '~ <Destination-variable> <Strings...>'
 : about 'Add string to right, use STR_FS if <Variable> is non-empty'
 : extended 'STR_FS or String can still be left empty. Proper input and context is left to user. '
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Target variable name}"
+: input "${1:?$(:argv-err 1 'Destination variable')}"
+: input "${2:?$(:argv-err 2 'String value(s)')}"
 : id shell/sys/_concat-if-ne/name-concat-strings-right
 : alias -nconcats
   declare -n __name_concat1=$1
@@ -222,7 +236,8 @@ String() {
 
 .name-concat-names-right() {
 : param '~ <Destination-variable> <Variable...>'
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Target variable name}"
+: input "${1:?$(:argv-err 1 'Destination variable')}"
+: input "${2:?$(:argv-err 2 'Source variable(s)')}"
 : id shell/sys/_concat-if-ne/name-concat-names-right
 : alias -nconcatn
   declare -n __name_concat1=$1
@@ -236,20 +251,21 @@ String() {
 .output-slice() {
 : param '~ <Start> <Len> <Command...>'
 : about 'Slice output lines of subcommand'
-: input "${3:?$FUNCNAME${*:+ ${*@Q}}: Command line}"
+: input "${1:?$(:argv-err 1 'Start')}"
+: input "${2:?$(:argv-err 2 'Length')}"
+: input "${3:?$(:argv-err 3 'Command line')}"
 : completion 'complete -F _command'
-  if_ok "$("${@:3}")" &&
+  ..Core.pass-status "$("${@:3}")" &&
   .line-slice "${@:1:2}" <<< "$_"
 }
 
 .wordmatch-any() {
 : param '~ <Word> <Words...>'
 : about 'Non-zero unless literal Word or pattern match is found in Words'
-: input "${1:?$FUNCNAME${*:+ $*}: Literal word or pattern expected}"
-: input "${2:?$FUNCNAME${*:+ $*}: Word values expected}"
+: input "${1:?$(:argv-err 1 'Literal word or pattern')}"
+: input "${2:?$(:argv-err 2 'Word value(s)')}"
   # Match Word with Strings, expanding string expression in Word
   case " ${*:2} " in ( *\ ${1}\ * ) ;; ( * ) false; esac
 }
 
-# TODO: replace with compiled part from str,us
-# Id: us-str.sh
+# Id: us_str                                     vim:set ft=bash sw=2 sts=2 et:

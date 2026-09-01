@@ -5,7 +5,7 @@ Say() {
 
 Support for VERBOSITY level and VERBOSE or QUIET bit settings.
 
-# Use case: user surface output messaging.
+## Use case: user surface output messaging.
 
 User options:
 
@@ -38,8 +38,6 @@ TODO: configure USER_FP and use for line print,
 : env "${ENV_CTX:=$0[$$]}"
 : env "${VERBOSITY:=1}"
 : env "${US_CHANNELS:=STD ERR DIAG USER DEBUG}"
-#  exec {DIAG_FD}>"file"
-#  trap 'exec {DIAG_FD}>&-' EXIT
 }
 
 .say-when() {
@@ -107,4 +105,4 @@ TODO: configure USER_FP and use for line print,
   >&$__FD echo "$1"
 }
 
-#
+# Id: us_say                                     vim:set ft=bash sw=2 sts=2 et:

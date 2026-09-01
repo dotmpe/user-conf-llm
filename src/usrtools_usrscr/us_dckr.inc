@@ -25,8 +25,10 @@ Docker() {
 .build() {
 : about 'Build docker image from configuration'
 : param '~ <From-config> ...'
-  (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
+: input "${1:?$(:argv-err 1 'Image-config key')}"
+
+  \inline ._common/context
+
   . <(sh_funbody ${FUNCNAME%/*}/_common/context)
   local imgconf_key=${1} dckrfile_path
 
@@ -66,9 +68,8 @@ Docker() {
 : param '~ <Config-key> <From-image> [<packages> [options...]]'
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
-  (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
-: input "${2:?$FUNCNAME${*:+ ${*@Q}}: Base image reference expected}"
+: input "${1:?$(:argv-err 1 'Image-config key')}"
+: input "${2:?$(:argv-err 2 'Base image reference')}"
   . <(sh_funbody ${FUNCNAME%/*}/_common/context)
   local imgconf_key=${1} imgconf_base=${2}
 
@@ -83,8 +84,7 @@ Docker() {
 .start() {
 : about 'Start temporary, new container from image and attach'
 : param '~ <Config-key> <options and params for container or special (entrypoint)...>'
-  (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
+: input "${1:?$(:argv-err 1 'Image-config key')}"
   local imgconf_key=${1}
 
   \builtin command docker run \
@@ -97,8 +97,7 @@ Docker() {
 : param '~ <Config-key> [<packages> [options...]]'
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
-  (($#)) || return ${_E_MA:?}
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Image-config key expected}"
+: input "${1:?$(:argv-err 1 'Image-config key')}"
   . <(sh_funbody ${FUNCNAME%/*}/_common/context)
   local imgconf_key=${1}
 
