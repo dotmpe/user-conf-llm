@@ -1,6 +1,7 @@
-._() {
-: name 'Say'
-: man 'Echo helper to message the user.
+Say() {
+: about 'Echo helper to message the user'
+: TODO fix man indexing
+  _man='Echo helper to message the user.
 
 Support for VERBOSITY level and VERBOSE or QUIET bit settings.
 
@@ -32,23 +33,13 @@ TODO: configure USER_FP and use for line print,
 : type part
 }
   
-._hooks() {
-: -A : ; }
+._hooks() { _: : -A : ; }
 ._hooks:declare() {
 : env "${ENV_CTX:=$0[$$]}"
 : env "${VERBOSITY:=1}"
 : env "${US_CHANNELS:=STD ERR DIAG USER DEBUG}"
-  exec {DIAG_FD}>"file"
-  trap 'exec {DIAG_FD}>&-' EXIT
-}
-._hooks:load() {
-  :
-}
-
-.log-do() {
-: param '~ <Level> <Tag> <Message> [<context or param>]'
-: als0 _{EMERG,CRIT,ALERT,ERROR,WARN,NOTICE,INFO,DEBUG} {1..8}
-  TODO
+#  exec {DIAG_FD}>"file"
+#  trap 'exec {DIAG_FD}>&-' EXIT
 }
 
 .say-when() {

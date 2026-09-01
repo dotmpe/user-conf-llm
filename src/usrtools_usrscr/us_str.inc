@@ -6,7 +6,7 @@ String() {
 : param '~ <Glob-var> [<Glob-pattern-value>]'
 : about 'Build glob for given glob that is completely case-insensitive'
 : extended 'This is only for ASCII, unicode support would be more involved'
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Glob variable, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Glob variable')}"
   local -n _us_str_glob1=${1}
   [[ ${2:+set} ]] && _us_str_in1=${2} || _us_str_in1=${_us_str_glob1}
   _us_str_glob1=
@@ -22,9 +22,21 @@ String() {
 .globmatch() {
 : about "Inline glob match of String to Pattern"
 : param " ~ <Pattern> <String> ..."
+: input "${1:?$(:argv-err 1 'Pattern')}"
+: input "${2:?$(:argv-err 2 'String name')}"
+  local -n _gm_str_name=${2}
+: input "${_gm_str_name:?$(:unset-err $2 "String value")}"
+  #shellcheck disable=2254  # Unquoted var is meant as case/esac glob expansion
+  case "${_gm_str_name}" in ( ${1} ) ;; ( * ) false; esac
+}
+
+.globmatch.str() {
+: about "Inline glob match of String to Pattern"
+: param " ~ <Pattern> <String> ..."
 : id str/globmatch
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Pattern, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ ${*@Q}}: String value, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Pattern')}"
+: input "${2:?$(:argv-err 2 'String value')}"
+  #shellcheck disable=SC2254  # Unquoted var is meant as case/esac glob expansion
   case "${2}" in ( ${1} ) ;; ( * ) false; esac
 }
 
@@ -49,8 +61,10 @@ String() {
   local __globreverse_val
   while User-Script.String.globmatch "*${1}*" "$__globreverse_tmp"
   do
+    #shellcheck disable=SC2295  # Match expansion from var is the idea here
     : "${__globreverse_tmp##*${1}}"
     __globreverse_val=${__globreverse_val:+${__globreverse_val}${1}}${_}
+    #shellcheck disable=SC2295  # Match expansion from var is the idea here
     __globreverse_tmp="${__globreverse_tmp%${1}*}"
   done
   [[ -z "${__globreverse_tmp-}" ]] || {
@@ -113,7 +127,7 @@ String() {
   echo "$str"
 }
 
-.join() {
+.join-str() {
 : param '<Dest> <Sep> <Str...>'
 : about 'Wrapper for join-array to insert via arguments'
 : completion 'complete -A arrayvar'

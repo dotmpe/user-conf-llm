@@ -20,11 +20,12 @@
     else
       LOGGER_STDERR=()
     fi
-  esac; }
-
+  esac
+}
 
 .log-do() {
 : param '~ <Level> <Tag> <Message> [<context or param>]'
+: als0 _{EMERG,CRIT,ALERT,ERROR,WARN,NOTICE,INFO,DEBUG} {1..8}
   local level_name=${1} base_tag=${2}
   # Join given tag base on LOG_TAG
   ${base_tag:1:1}
@@ -33,4 +34,3 @@
     -t "${LOG_TAG}" \
     "${LOGGER_STDERR[@]}" -- "${@:3}"
 }
-

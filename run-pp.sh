@@ -20,7 +20,7 @@ METADIR=.local
 \builtin . ./common-dsl.bash
 
 #us_part $usp_opts --reload uc-loader
-#. <(uc_inc_pre usrtools_userconf/uc_docker)
+#. <(uc_inc_pre usrtools_usrconf/uc_docker)
 
 DEBUG=1 VERBOSITY=4
 . src/usrtools_usrscr/us_pp.inc

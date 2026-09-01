@@ -3,15 +3,20 @@
 # Copyright 2026 .mpe  <me@dotmpe.com>
 # 
 # Distributed under terms of the MIT license.
-./_hooks/init() {
+Dev() {
+: tag dev
+}
+._hooks() { _: : -A : ; }
+._hooks:global() {
 : env "${UC_DEV_PATHS:=${UC_DEV_PATHS:-.}}"
   append_lookup "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
 }
 
 #shellcheck disable=SC2120
-./scan() {
+.scan() {
 : about 'Scan for TODO/XXX/FIXME tags in project directories'
-  ! ((${#})) || return ${_E_GAE:?}
+  ! (($#)) || return ${_E_GAE:?}
+: tag util
 : env "${UC_DEV_PATHS:=${UC_DEV_PATHS:-.}}"
   local path args
 
@@ -44,6 +49,3 @@
     fi
   done
 }
-
-./_hooks/init
-./scan

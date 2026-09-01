@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 \builtin . ./common_setup.bash
 
@@ -11,13 +11,13 @@ us_part --hooks:declare,define,init us-term
 METADIR=.local
 
 us_part $usp_opts --reload uc-loader
-. <(uc_inc_pre usrtools_userconf/uc_docker)
+. <(uc_inc_pre usrtools_usrconf/uc_docker)
 
-# FIXME: uc_inc usrtools_userconf/uc_docker.inc
-/usrtools_userconf/uc_docker/_hooks/declare
-/usrtools_userconf/uc_docker/_hooks/init
+# FIXME: uc_inc usrtools_usrconf/uc_docker.inc
+/usrtools_usrconf/uc_docker/_hooks/declare
+/usrtools_usrconf/uc_docker/_hooks/init
 if [[ ! ${uc_docker_imgconf_from['deb-bookworm:dev']:+set} ]]; then
-  /usrtools_userconf/uc_docker/new_config \
+  /usrtools_usrconf/uc_docker/new_config \
     'deb-bookworm:dev' 'debian:bookworm-slim' \
     'bash ca-certificates curl git procps vim' \
     --extra 'RUN curl -s https://bashunit.com/install.sh | bash -s -- /usr/local/bin
@@ -29,7 +29,7 @@ if [[ ! ${uc_docker_imgconf_from['deb-bookworm-bash:dev']:+set} ]]; then
 
   # TODO: try buildpack-deps:bookworm to speed up build tools install
 
-  /usrtools_userconf/uc_docker/new_config \
+  /usrtools_usrconf/uc_docker/new_config \
     'deb-bookworm-bash:dev' 'debian:bookworm-slim' \
     'build-essential wget libreadline-dev zlib1g-dev' \
     --extra '
@@ -47,12 +47,12 @@ WORKDIR /project
 '
 fi
 # FIXME: cache_setmap should update session
-/usrtools_userconf/uc_docker/_hooks/init
+/usrtools_usrconf/uc_docker/_hooks/init
 #declare -p uc_docker_imgconf_{from,packages,extra,settings}
 #for img in "${!uc_docker_imgconf_from[@]}"; do
 #  _ docker rmi "${img}"
-#  /usrtools_userconf/uc_docker/build "$img"
+#  /usrtools_usrconf/uc_docker/build "$img"
 #done
-/usrtools_userconf/uc_docker/build 'deb-bookworm:dev'
-/usrtools_userconf/uc_docker/start 'deb-bookworm:dev' "$@"
+/usrtools_usrconf/uc_docker/build 'deb-bookworm:dev'
+/usrtools_usrconf/uc_docker/start 'deb-bookworm:dev' "$@"
 #

@@ -3,28 +3,26 @@
 # Copyright 2026 .mpe  <me@dotmpe.com>
 # 
 # Distributed under terms of the MIT license.
-./() {
+Docker() {
 : tag cli util group
 : env "${_E_GAE:=193}" "${_E_MA:=194}"
 }
 
-./_hooks() {
-: FIXME : -A
-}
-./_hooks/declare() {
+._hooks() { : -A : ; }
+._hooks:global() {
 : env "${UC_DOCKER_CACHE:=${CACHE_DIR:-.local/cache}}"
 : env "${UC_DOCKER_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
 : env "${UC_DOCKER_IMGCONF:=${UC_DOCKER_DATADIR:?}/uc_docker_imgconfig.data.bash}"
 : env "${UC_DOCKER_IMGCONF_MAPSPEC:=uc_docker_imgconf_{from,packages,extra,settings\}}"
   declare -ga uc_docker_imgconf_assocs
 }
-./_hooks/init() {
+._hooks:load() {
   \builtin read -ra uc_docker_imgconf_assocs < <(
     \builtin . <(echo echo ${UC_DOCKER_IMGCONF_MAPSPEC:?})) &&
   cache_loadmaps "${UC_DOCKER_IMGCONF:?}" "${uc_docker_imgconf_assocs[@]:?}"
 }
 
-./build() {
+.build() {
 : about 'Build docker image from configuration'
 : param '~ <From-config> ...'
   (($#)) || return ${_E_MA:?}
@@ -63,7 +61,7 @@
   \builtin command docker build -t "${imgconf_key}" -f "${dckrfile_path}" .
 }
 
-./new_config() {
+.new_config() {
 : about 'Create new docker image configuration'
 : param '~ <Config-key> <From-image> [<packages> [options...]]'
 : param '~ .. --packages <Names>'
@@ -82,7 +80,7 @@
   . <(sh_funbody ${FUNCNAME%/*}/_common/argparse)
 }
 
-./start() {
+.start() {
 : about 'Start temporary, new container from image and attach'
 : param '~ <Config-key> <options and params for container or special (entrypoint)...>'
   (($#)) || return ${_E_MA:?}
@@ -95,7 +93,7 @@
     --rm -it "${imgconf_key}" "${@:2}" 
 }
 
-./update_config() {
+.update_config() {
 : param '~ <Config-key> [<packages> [options...]]'
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
@@ -108,7 +106,7 @@
   . <(sh_funbody ${FUNCNAME%/*}/_common/argparse)
 }
 
-./_common/argparse() {
+._common/argparse() {
   while (($#)); do
   case "$1" in
     ( '' ) false ;;
@@ -130,7 +128,7 @@
   esac || failerr "${1@Q}? Option or argument error" ${_E_GAE:?} || return; done
 }
 
-./_common/context() {
+._common/context() {
   local -n __imgconf_from='uc_docker_imgconf_from[$imgconf_key]'
   local -n __imgconf_packages='uc_docker_imgconf_packages[$imgconf_key]'
   local -n __imgconf_extra='uc_docker_imgconf_extra[$imgconf_key]'

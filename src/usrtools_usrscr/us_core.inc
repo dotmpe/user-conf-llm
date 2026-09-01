@@ -166,7 +166,8 @@
 : tag int util
   local _us_stat="${1:?$FUNCNAME: Status integer, $ENV_CTX}"
 
-  \inline ...clamp-status
+  # \inline ...clamp-status
+  ___=.clamp-status; inline-fun
   return ${_us_stat}
 }
 
@@ -177,7 +178,8 @@
 : tag int util
   local _us_stat="${1:?$FUNCNAME: Status integer, $ENV_CTX}"
 
-  \inline ...clamp-nonzero-status
+  # \inline ...clamp-nonzero-status
+  ___=.clamp-nonzero-status; inline-fun
   return ${_us_stat}
 }
 
