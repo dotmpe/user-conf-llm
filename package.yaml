@@ -20,6 +20,19 @@
       aider+unsane: aider+user --no-show-model-warnings --auto-commits
 
       aider: 'aider+user'
+
+      bashunit+llm+docs+update: |
+        mkdir -p .local/agent &&
+        curl -s https://bashunit.com/llms.txt \
+          -o .local/agent/bashunit-docs-index.txt &&
+        curl -s https://bashunit.com/llms-full.txt \
+          -o .local/agent/bashunit-docs.txt
+
+      bashunit+llm+skills+update:
+        mkdir -p .claude/skills/bashunit &&
+        curl -sL https://bashunit.com/bashunit-skill.md \
+          -o .claude/skills/bashunit/SKILL.md
+
     scripts: {}
   scm-ignores: .gitignores
   source: dotmpe/user-conf-llm.git
