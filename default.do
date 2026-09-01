@@ -39,7 +39,7 @@ default_do_main() {
 
     # Default build target
   ( all|@all|:all )
-        TODO
+        redo-always && redo-ifchange "${xredo_all_targets[@]}"
       ;;
 
   ( * ) false

@@ -32,7 +32,6 @@ declare -ga uc_cb_exit
 
 if [[ ! ${REDO_RUNID:+set} ]]; then
   #exec 2> >(str_prefix "  $ENV_CTX: ")
-
   trap ':exit' EXIT
   exec {USER_FD}> >(str_prefix "  $ENV_CTX: ")
   USER_FILTER_PID=$!
@@ -41,6 +40,10 @@ if [[ ! ${REDO_RUNID:+set} ]]; then
     "wait ${USER_FILTER_PID} 2>/dev/null || true"
   )
 else
+  shopt -s expand_aliases
+  shopt -s extdebug
+  declare -gA _os_script_{load,path}
+
   exec {USER_FD}>&2
 fi
 
@@ -50,5 +53,9 @@ ENV_CTX="$$"'$'"$-/${0##*/}"
 : "${_E_next:=196}"
 : "${_E_break:=197}"
 : "${_E_retry:=198}"
+
+: "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
+: "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
+: "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
 
 # Id: common_env                          vim:set ft=bash sw=2 sts=2 et:

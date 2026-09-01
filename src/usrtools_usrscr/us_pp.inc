@@ -1,4 +1,4 @@
-# .inc file, see User-Conf or User-Script us-inc for specification.
+#.inc file, see User-Conf or User-Script us-inc for specification.
 # 
 # Copyright 2026 .mpe  <me@dotmpe.com>
 # 
@@ -7,6 +7,25 @@
 
 Pre-Processor() {
 : tag group
+}
+._hooks() { : -A : ; }
+._hooks:global() {
+: env "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
+: env "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
+: env "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
+#: env "${US_PP_STATE_MAPSPEC:=uc_pp_{name_map,meta_static\}}"
+#  declare -ga us_pp_state_assocs
+}
+._hooks:load() {
+: env "${_E_break:?}"
+: env "${_E_continue:?}"
+: env "${_E_MA:?}"
+: env "${_E_next:?}"
+: env "${_E_retry:?}"
+  #\builtin read -ra us_pp_state_assocs < <(
+  #  \builtin . <(echo echo ${US_PP_STATE_MAPSPEC:?})) &&
+  #cache_loadmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]:?}"
+  cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
 }
 
 ._concat-source () {
@@ -20,6 +39,7 @@ Pre-Processor() {
 ._match-inblock-line() {
   local -n _from2=${1}
   case "${_from2}" in
+
   ( :_\ * )
       : "${_from2//; /$';\n'}"
       : "${_//" && "/$' && \n'}"
@@ -55,6 +75,10 @@ Pre-Processor() {
       fi
     ;;
 
+  ( \#shellcheck\ * )
+      return ${_E_next:?}
+    ;;
+
   ( \#\ * | \# ) : no op
       return ${_E_retry:?}
     ;;
@@ -63,7 +87,9 @@ Pre-Processor() {
       if [[ ${_ns0_pre} != "${_ns0_nameref}" ]]; then
         local _scrline=${_from}
         :globstrip-charsleft _scrline $'[\ \t]'
-        if [[ ${_scrline:0:1} = \# ]]; then
+        if [[ ${_scrline} = \#shellcheck\ * ]]; then
+          return ${_E_next:?}
+        elif [[ ${_scrline:0:1} = \# ]]; then
           return ${_E_retry:?}
         fi
         if [[ ${_scrline} = *" :_ "* ]]; then
@@ -104,8 +130,8 @@ Pre-Processor() {
   local _{meta,value} _metaline=${us_pp_line}
   :globstrip-charsleft _metaline $'[:\ \t]'
   read -r _{meta,value} <<< "${_metaline}"
-  local -n _dest="us_pp_meta_static[\"$_ns0_nameref : $_meta\"]"
-  _dest=${_dest:+"$_dest"$'\n'}$_value
+  local -n _dest="us_pp_meta_static[\"$_ns0_nameref : ${_meta:?}\"]"
+  [[ ! ${_value:+set} ]] || _dest=${_dest:+"$_dest"$'\n'}${_value:?}
 }
 
 ._read-modulename() {
@@ -204,6 +230,10 @@ Pre-Processor() {
     to-v printf.lines.array-map.tab us_pp_name_map
     to-v printf.lines.array-map.tab us_pp_meta_static
   fi
+
+  # TODO: manage state per source
+  #cache_dumpmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]}"
+  >| "${US_PP_STATE:?}" sh_dumpglobal us_pp_{name_map,meta_static}
 }
 
 ._emit-line() {
@@ -218,8 +248,8 @@ Pre-Processor() {
   # FIXME: give global access to accumulated sources, for cache invalidation etc.
   # Should probably prepare a copy for these on request, after wrapping up run
   declare -a us_pp_sources
-  declare -A us_pp_name_map
-  declare -A us_pp_meta_static
+  #declare -A us_pp_name_map
+  #declare -A us_pp_meta_static
 
   local us_pp_{line,mode,retry}
 

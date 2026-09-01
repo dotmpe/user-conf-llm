@@ -10,7 +10,11 @@ if [[ ${0##*/} = common-dsl.bash ]]; then
   shopt -s extdebug
 fi
 
-:_() { "$@"; }
+:_() {
+: about 'Placeholder for pseudo-macro to unfold Bash line'
+: param '~ <Sub-command...>'
+  ! (($#)) || "$@"
+}
 
 :argv-err() {
 : param '~ <Position> <Label>'
@@ -37,7 +41,8 @@ to-v() {
 # sometimes when writing it might help to have dev-mode only defs, like this:
 if shopt -q expand_aliases; then
   alias printf.line="printf '%s\\n'"
-  alias 'say@v=.say-when $VERBOSITY'
+  alias 'say@v=:say-when $VERBOSITY'
+  #shellcheck disable=2142  # alias referencing positionals is fine, actually
   alias functxln='say@v "$FUNCNAME: ${*@Q} [$#]"'
 else
   printf.line() { printf '%s\\n' "$@"; }
@@ -56,7 +61,8 @@ printf.lines.array-map.tab() {
   shift
   (($#)) || set -- "${!_pfl_arr[@]}"
   for _pfl_k; do
-    printf '%s\t%s\n' "$_pfl_k" "${_pfl_item-NULL}";
+    : "${_pfl_item//$'\n'/$'\n  '}"
+    printf '%s\t%s\n' "$_pfl_k" "${_-NULL}";
   done
 }
 say.err() { :say-when 1 "$1"; }
@@ -77,11 +83,11 @@ say.debug() { :say-when 4 "$1"; }
 
 # other dev-mode impl. helper, to be stripped/replaced before pack and dist
 TODO() {
-  (($#)) && : "$*" || {
+  (($#)) && : "To-do: $*" || {
     ((${#FUNCNAME[*]} > 1)) && : "${FUNCNAME[1]}()" || : "main"
     : "Unspecified to-do in ${_@Q}"
   }
-  ${TODO_call:-say.debug} "${_}"
+  ${TODO_call:-say@v} "${_}"
   return ${_E_todo:-125}
 }
 
@@ -108,13 +114,15 @@ TODO() {
 
 :inline.fun.status() {
 : about 'Include body of function with return status'
-  \builtin . <(sh_funbody ${_%_} _fb_script && echo "$_fb_script || return")
+  \builtin . <(sh_funbody ${_%_} _fb_script && echo "${_fb_script:?} || return")
 }
 
 # TODO: strip (most) : lines in sh_funscr <fun>, or use specific call: sh_funscr_nometa {als,tag,about,type} ...
 _inline_fun_tpl=$(sh_funbody :inline.fun)
+#shellcheck disable=2139  # var is expanded from tpl on assign
 alias inline-fun="${_inline_fun_tpl//_%_/___}"
 _inline_fun_status_tpl=$(sh_funbody :inline.fun.status)
+#shellcheck disable=2139  # var is expanded from tpl on assign
 alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 
 
@@ -195,7 +203,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 : input "${2:?$(:argv-err 2 'String name')}"
   local -n _gm_str_name=${2}
 : input "${_gm_str_name:?$(:unset-err $2 "String value")}"
-  #shellcheck disable=2254
+  #shellcheck disable=2254  # Unquoted var is meant as case/esac glob expansion
   case "${_gm_str_name}" in ( ${1} ) ;; ( * ) false; esac
 }
 
@@ -204,7 +212,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 : param " ~ <Pattern> <String> ..."
 : input "${1:?$(:argv-err 1 'Pattern')}"
 : input "${2:?$(:argv-err 2 'String value')}"
-  #shellcheck disable=2254
+  #shellcheck disable=2254  # Unquoted var is meant as case/esac glob expansion
   case "${2}" in ( ${1} ) ;; ( * ) false; esac
 }
 
@@ -250,4 +258,5 @@ if [[ ${0##*/} = common-dsl.bash ]]; then
   declare -f :read-args
   declare -f myArgsRead
 fi
+
 # Id: common-dsl                          vim:set ft=bash sw=2 sts=2 et:
