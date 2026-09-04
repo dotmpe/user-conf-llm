@@ -11,7 +11,9 @@
 
 .redo/
 
+pack/
 dist/
+
 
 # C tags... for generators that don't use already prepared hidden dirs
 .tags

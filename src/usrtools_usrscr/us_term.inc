@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Terminal() {
 : type group
@@ -203,7 +203,7 @@ WRITE \033(B rmacs'
     read_opts=( -"$read_flags" )
   fi &&
   . <(sh_funbody ${FUNCNAME%.*}._read-options) &&
-  read "${read_opts[@]}" "${@:-read_input}" #</dev/tty
+  read -r "${read_opts[@]}" "${@:-read_input}" #</dev/tty
 }
 
 .user-input() {
@@ -230,9 +230,9 @@ WRITE \033(B rmacs'
     failerr "Variable name expected" || return
   fi &&
   if ((offset)); then
-    ${us_term_pre:?}read-input "${@:1:offset-2}" "${@:offset}" || return
+    .read-input "${@:1:offset-2}" "${@:offset}" || return
   else
-    ${us_term_pre:?}read-input "${@}" || return
+    .read-input "${@}" || return
   fi &&
 
   if [[ ! ${_us_term_varref1:+set} ]]; then
@@ -241,7 +241,7 @@ WRITE \033(B rmacs'
 
   if ((boolean)); then
     ! ((bit)) || local US_STR_TRUE=1 US_STR_FALSE=0
-    ${us_str_pre:?}map-normalize --boolean ${!_us_term_varref1} || return
+    ..String.map-normalize --boolean ${!_us_term_varref1} || return
   fi
 }
 
@@ -251,7 +251,7 @@ WRITE \033(B rmacs'
   for var in "${!us_term_capvar[@]}"
   do
     : "${capname:?$FUNCNAME${*:+ $*}: Capability name for $var}"
-    if_ok "$(2>/dev/null tput $capname)" &&
+    ..Core.pass-status "$(2>/dev/null tput $capname)" &&
     declare -g $var=$_ || {
       failerr "No $capname for terminal $TERM"
       fail=1

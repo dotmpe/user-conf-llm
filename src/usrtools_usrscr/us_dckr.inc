@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Docker() {
 : tag cli util group
@@ -27,9 +27,9 @@ Docker() {
 : param '~ <From-config> ...'
 : input "${1:?$(:argv-err 1 'Image-config key')}"
 
-  \inline ._common/context
+  # \inline ._common/context
+  . <(sh_funbody ._common/context)
 
-  . <(sh_funbody ${FUNCNAME%/*}/_common/context)
   local imgconf_key=${1} dckrfile_path
 
   dckrfile_path=${UC_DOCKER_CACHE}/uc_docker_imgconf-${1//[!A-Za-z0-9_]/_}.dockerfile
@@ -70,7 +70,7 @@ Docker() {
 : param '~ .. --extra <Additional script>'
 : input "${1:?$(:argv-err 1 'Image-config key')}"
 : input "${2:?$(:argv-err 2 'Base image reference')}"
-  . <(sh_funbody ${FUNCNAME%/*}/_common/context)
+  . <(sh_funbody ._common/context)
   local imgconf_key=${1} imgconf_base=${2}
 
   shift 2 || return ${_E_GAE:?}
@@ -78,7 +78,7 @@ Docker() {
     failerr "Configuration ${imgconf_key@Q} already exists" || return
   cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_from}" "${imgconf_base}" ||
     failerr "E$? during save" || return
-  . <(sh_funbody ${FUNCNAME%/*}/_common/argparse)
+  . <(sh_funbody ._common/argparse)
 }
 
 .start() {
@@ -90,7 +90,7 @@ Docker() {
   \builtin command docker run \
     -v $PWD:/project:rw \
     --workdir /project \
-    --rm -it "${imgconf_key}" "${@:2}" 
+    --rm -it "${imgconf_key}" "${@:2}"
 }
 
 .update_config() {
@@ -98,11 +98,11 @@ Docker() {
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
 : input "${1:?$(:argv-err 1 'Image-config key')}"
-  . <(sh_funbody ${FUNCNAME%/*}/_common/context)
+  . <(sh_funbody ._common/context)
   local imgconf_key=${1}
 
   shift || return ${_E_GAE:?}
-  . <(sh_funbody ${FUNCNAME%/*}/_common/argparse)
+  . <(sh_funbody ._common/argparse)
 }
 
 ._common/argparse() {

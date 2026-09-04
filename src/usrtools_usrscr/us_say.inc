@@ -21,19 +21,13 @@ User options:
 - Silent: let the status speak for itself.
 
 Scripts or commands should decide on how exactly to use above schemes, depending
-on their own options and needs. 
-
-For `say`, 
-
-VERBOSE, QUIET and SILENT 
-  
-TODO: configure USER_FP and use for line print,
+on their own options and needs.
 
 '
 : type part
 }
-  
-._hooks() { _: : -A : ; }
+
+._hooks() { :- : -A : ; }
 ._hooks:declare() {
 : env "${ENV_CTX:=$0[$$]}"
 : env "${VERBOSITY:=1}"

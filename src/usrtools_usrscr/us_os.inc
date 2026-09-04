@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Operating-System() {
 : type group
@@ -39,7 +39,7 @@ Operating-System() {
 : tag util
 : completion 'complete -A directory'
   (($#-1)) || return ${_E_MA:-194}
-  local _PATHNAME=${@:$#:1}
+  local _PATHNAME=${*:$#:1}
 : input ${_PATHNAME:?$FUNCNAME: Lookup variable, $ENV_CTX}
   local -n _PATH=$_PATHNAME
   #: input "${_PATH?$FUNCNAME: Lookup variable ${_PATHNAME@Q} value, $ENV_CTX}"
@@ -68,7 +68,7 @@ Operating-System() {
 : tag util
 : completion 'complete -A directory'
   local dirc _var
-  ! (($#-1)) && dirc=1 || dirc=$#-1 _var=${@: $#:1}
+  ! (($#-1)) && dirc=1 || dirc=$#-1 _var=${*: $#:1}
   .lookup-append "${@:1: $dirc}" "${_var:-PATH}"
 }
 

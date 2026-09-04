@@ -64,7 +64,7 @@ Loader() {
       ( __ ) source_line=./\ ${source_line:3} ;;
       ( [%A-Za-z_-][A-Za-z0-9_\ -] ) source_line=./$source_line ;;
 
-      ( . ) 
+      ( . )
           _1="${source_line%'() {'}"
           _2="${_1%% *}/"
           _3="${_2//"./"}"

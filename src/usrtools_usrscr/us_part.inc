@@ -1,15 +1,15 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
-._() {
+Part() {
 : command-group
 : man 'User-Scripts parts are groups for shell elements or fragments. Parts
 consists of arrays of header data and static scripts that form an envelope for
 a collection of functions.
 
-# Summary
+## Summary
 The main purposes of ~ are:
 
 - loading variable/function/alias (type of) sets as groups from source
@@ -32,7 +32,7 @@ sequence has run. The phases are:
 While there may be custom keys in the hooks header assoc, this is the standard
 lifecyle spec that us-part should follow by default.
 
-# Further reading
+## Further reading
 For header details first read the data schema, those should explain the
 mnemonics for usage and source notations.
 
@@ -40,10 +40,11 @@ For usage refer to the individual functions.
 '
 }
 
-._hooks+load() {
-: "${SCRIPTPATH:=}"
-: "${US_PARTOPTS:=simple:p=0 init=0 renit:I=0 reload:L=0 export:X=0 alias:S=0 dump=0}"
-: "${US_PARTOPTS:=simple:p=0 init=0 reInit=0 reLoad=0 eXport=0 aliaS=0 dump=0}"
+._hooks() { : -A : ; }
+._hooks:global() {
+: env "${SCRIPTPATH:=}"
+: env "${US_PARTOPTS:=simple:p=0 init=0 renit:I=0 reload:L=0 export:X=0 alias:S=0 dump=0}"
+: env "${US_PARTOPTS:=simple:p=0 init=0 reInit=0 reLoad=0 eXport=0 aliaS=0 dump=0}"
 }
 
 .list-parts() {
@@ -63,7 +64,7 @@ For usage refer to the individual functions.
 : param '~ ... -+<longopt> | +<f>'
 : param '~ ... --hooks:<names,>'
 : man '~ is an rudimentary argument parser followed by a load/cache/option loop
-over source part names. 
+over source part names.
 
 Tasks:
 1. lookup and resolve for name and id, and using regular path lookup and pattern mapping
@@ -71,7 +72,7 @@ Tasks:
 3. save the found state in a part cache function (with header copy, kept outside the source)
 4. run each option: grp, var, ssc, als
 
-For details on schema read the us_part linkml specification. 
+For details on schema read the us_part linkml specification.
 
 ~ is a core routine, that depends on other core parts:
 

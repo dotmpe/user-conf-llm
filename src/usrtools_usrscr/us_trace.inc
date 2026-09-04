@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Trace() {
 : type group
@@ -31,12 +31,12 @@ Trace() {
     local -n _field$j=_in${map[j]}
   done &&
   local _in{0,1,2} &&
-  for (( i=${frame}; 1; i++ ))
+  for (( i=frame; 1; i++ ))
   do
     : "$(caller $i)" &&
     test -n "$_" &&
     IFS=$'\n ' read -r _in{0,1,2} <<< "$_" &&
-    printf "$fmt" "$_field0" "$_field1" "$_field2" ||
+    printf "$fmt" "${_field0:?}" "${_field1:?}" "${_field2:?}" ||
       break
   done
 }

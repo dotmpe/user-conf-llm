@@ -1,11 +1,9 @@
-._() {
-: name 'Log'
-: man '~ is a wrapper for the logger util.'
+Log() {
+: about '~ is a wrapper for the logger util.'
 : type part
 }
-  
-._hooks() {
-: -A : ; }
+
+._hooks() { :- : -A : ; }
 ._hooks:declare() {
 : env "${LOG_LEVEL:=info}"
 : env "${LOG_TAG:=${0##*/}}" "override per context"

@@ -1,37 +1,35 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Shell() {
 : type group
 }
 
-.byname-concat-after () # ~ <Variable-name> <Separator> <Value> ...
-{
+.byname-concat-after() {
+: param '~ <Variable-name> <Separator> <Value> ...'
 : src us-util.bash
 : id sh-byname-concat-after
 : completion 'complete -A variable'
-: input "${1:?$FUNCNAME${*:+ $*}: Variable name, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ $*}: Separator, $ENV_CTX}"
-: input "${3:?$FUNCNAME${*:+ $*}: Append value, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Variable name')}"
+: input "${2:?$(:argv-err 2 'Separator')}"
+: input "${3:?$(:argv-err 3 'Append value')}"
   local -n _var=${1}
   _var=${_var-}${_var:+${2}}${3}
 }
 
-.byname-set-value ()
-{
+.byname-set-value() {
 : src us-util.bash
 : id sh-byname-set
 : completion 'complete -A variable'
-: input "${1:?$FUNCNAME${*:+ $*}: Variable name, $ENV_CTX}"
-: input "${2?$FUNCNAME${*:+ $*}: Variable value, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Variable name')}"
+: input "${2?$(:argv-err 2 'Variable value')}"
   local -n _var=${1}
   _var=${3}
 }
 
-.command-not-found-handle ()
-{
+.command-not-found-handle() {
 : about 'Implementation for Bash command_not_found_handle'
   local rs \
     idname=${1//[^A-Za-z0-9_]/_} \
@@ -56,13 +54,12 @@ Shell() {
   fi
 }
 
-.dump-push ()
-{
-: input "${*:?$FUNCNAME${*:+ $*}: Variable name(s), $ENV_CTX}"
+.dump-push() {
+: input "${*:?$(:argv-err \* 'Variable name(s)')}"
   local var
   for var
   do
-    if_ok "$(declare -p $var)" &&
+    ..Core.pass-status "$(declare -p $var)" &&
     : "${_#"declare -"[aA]" $var="}" &&
     echo -e "$var+=(\n  ${_:1: -1}\n)"
   done | sed -E '
@@ -71,68 +68,66 @@ Shell() {
   '
 }
 
-.dump-globals ()
-{
+.dump-globals() {
 : about 'Helper to make variable dumps global for re-use within functions'
 : param '~ <Vars...>'
 : completion 'complete -A variable -A arrayvar'
-: input "${*:?$FUNCNAME${*:+ $*}: Variable name(s), $ENV_CTX}"
+: input "${*:?$(:argv-err \* 'Variable name(s)')}"
   local var
   for var
   do
-    if_ok "$(declare -p $var)" &&
+    ..Core.pass-status "$(declare -p $var)" &&
     : "${_#declare -}" &&
     : "${_#-}" &&
     echo "declare -g${_}"
   done
 }
 
-.expand-static ()
-{
+.expand-static() {
 : about "Perform expansion for shell string"
-: input "${1:?$FUNCNAME${*:+ $*}: Shell string}"
-: input "${2:?$FUNCNAME${*:+ $*}: Array variable name}"
+: input "${1:?$(:argv-err 1 'Shell string')}"
+: input "${2:?$(:argv-err 2 'Array variable name')}"
 : completion 'complete -A arrayvar'
-  # shellcheck disable=2162 # read without -r
-  if_ok "$(eval "echo $1")" &&
+  #shellcheck disable=2162   # read without -r
+  ..Core.pass-status "$(eval "echo $1")" &&
   <<< "${_}" read -a ${2:?}
 }
 
-.function-body ()
-{
+.function-body() {
 : param '<Ref-fun> [<Dest-var>] ...'
 : aliases sh-fbody fun-body
-: input "${1:?$FUNCNAME: Function name expected}"
-  (($#-1)) && local -n _out=${2:?$FUNCNAME: Output name expected} || local _out
-  if_ok "$(typeset -f "$1")" || return
+: input "${1:?$(:argv-err 1 'Function name expected')}"
+  (($#-1)) &&
+  local -n _out=${2:?$(:argv-err 2 'Output name expected')} ||
+    local _out
+  ..Core.pass-status "$(typeset -f "$1")" || return
   : "${_#* () }"
   : "${_:4:-2}"
   _out="$_"
   (($#>1)) || echo "$_out"
 }
 
-.function-eval ()
-{
+.function-eval() {
 : param '<Function-name> <Function-body>'
-: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ $*}: Function body, $ENV_CTX}"
-: "${1} () { ${*:2}; }"
+: input "${1:?$(:argv-err 1 'Function name')}"
+: input "${2:?$(:argv-err 2 'Function body')}"
+  : "${1} () { ${*:2}; }"
   eval "$_"
 }
 
-.function-exists ()
-{
+.function-exists() {
 : param ' ~ <Funcname> ...'
 : completion 'complete -A function'
-: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}"
-  User-Script.Core.pass-status "$(declare -F -- "${_}")"
+: input "${1:?$(:argv-err 1 'Function name')}"
+  ..Core.pass-status "$(declare -F -- "${_}")"
 }
 
-.maptabvars-defaults ()
-{
+.maptabvars-defaults() {
 : param ' ~ <Table-string-var> ...'
 : completion 'complete -A variable'
-  local -n _tab=${1:?}
+: input "${1:?$(:argv-err 1 'Table name')}"
+  local -n _tab=${1}
+: input "${_tab:?$(:unset-err $1 "Table value ")}"
   local dest sources
   while read -r dest sources
   do
@@ -144,14 +139,15 @@ Shell() {
       continue 2
     done
     failerr "$FUNCNAME: No value for ${!_dest} (from $sources, ignored)"
-  done <<< "${_tab:?}"
+  done <<< "${_tab}"
 }
 
-.mapvars-defaults ()
-{
+.mapvars-defaults() {
 : param ' ~ <Array-var> ...'
 : completion 'complete -A arrayvar'
-  local -n _map=${1:?}
+: input "${1:?$(:argv-err 1 'Variable name')}"
+  local -n _map=${1}
+#: input "${_map:?$(:unset-err $1 "Variable value")}"
   local o=0
   while [[ $o -lt ${#_map[@]} ]]
   do
@@ -167,25 +163,23 @@ Shell() {
   done
 }
 
-.meta-for ()
-{
+.meta-for() {
 : param ':0 ~ <To-var> <Field-key> ...'
 : completion 'complete -A variable'
-: input "${1:?$FUNCNAME${*:+ $*}: Destination variable, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ $*}: Field name, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Destination variable')}"
+: input "${2:?$(:argv-err 2 'Field name')}"
   local _line
   while read -r _line
   do
-    [[ ${_line} =~ ^[\ \	]*([:\ _]+)${2}\ +[\'\"]?([^\'\"\;]+) ]] || continue
+    [[ ${_line} =~ ^[$' \t']*([:\ _]+)${2}\ +[\'\"]?([^\'\"\;]+) ]] || continue
     break
   done
   [[ ${BASH_REMATCH[2]:+set} ]] || return
-  # shellcheck disable=2059 # using variable in printf format
+  #shellcheck disable=2059  # using variable in printf format
   printf -v "${1}" "${BASH_REMATCH[2]}"
 }
 
-.reference ()
-{
+.reference() {
 : about 'Print first found reference for symbol(s)'
 : param ' ~ <Symbols...>'
 : completion 'complete -avc -A function'
@@ -213,13 +207,12 @@ Shell() {
   done
 }
 
-.Symbol.alias-main ()
-{
+.Symbol.alias-main() {
 : TODO 'integrate with user command(s)'
   case "${1:?}" in
   ( --match-all )
       local aliases
-      _Sys_Read_Exec aliases compgen -A alias -X "!${2:?}" &&
+      ..System.read-call aliases compgen -A alias -X "!${2:?}" &&
       .Symbol.alias-main "${@:3}" "${aliases[@]}"
     ;;
   ( --command )
@@ -227,7 +220,7 @@ Shell() {
       local als stat
       for als
       do
-        if_ok "$(type "${als}")" &&
+        ..Core.pass-status "$(type "${als}")" &&
         : "${_#"$als is aliased to \`"}" &&
         : "${_%\'}" &&
         echo "$_" || stat=$?
@@ -240,7 +233,7 @@ Shell() {
       while [[ ${cmd:+set} || ${#} -gt 0 ]]
       do
         [[ ${cmd:+set} ]] || {
-          cmd=${1:?$FUNCNAME${*:+ $*}: Alias symbol}
+          cmd=${1:?$(:argv-err 1 'Alias symbol')}
           shift
         }
         def="$(type "${cmd}")" &&
@@ -263,45 +256,40 @@ Shell() {
     ;;
   ( --show )
       local aliases
-      _Sys_Read_Exec aliases compgen -A alias -X "!${2:?}" &&
-      _Sys_Exec_Apply type aliases
+      ..System.read-call aliases compgen -A alias -X "!${2:?}" &&
+      ..System.call-apply type aliases
   esac
 }
 
-.references ()
-{
+.references() {
 : about 'Print all references for symbol(s)'
 : param ' ~ <Symbols...>'
 : completion 'complete -avc -A function'
   .reference --all "$@"
 }
 
-.reload-env ()
-{
-: input "${1:?$FUNCNAME${*:+ $*}: Function name}"
+.reload-env() {
+: input "${1:?$(:argv-err 1 'Function name')}"
 : completion 'complete -A function'
-	local src
-	if_ok "$(declare -F "${1}")" &&
-	read -r _ _ src <<< "${_}" &&
-	. "${src:?}"
+  local src
+  ..Core.pass-status "$(declare -F "${1}")" &&
+  read -r _ _ src <<< "${_}" &&
+  . "${src:?}"
 }
 
-.reload-source ()
-{
-: input "${1:?$FUNCNAME${*:+ $*}: Function name}"
+.reload-source() {
+: input "${1:?$(:argv-err 1 'Function name')}"
   TODO "reload $* propery (see .reload-env); try grouping sources for cache files to do this"
 }
 
-.try-unalias ()
-{
+.try-unalias() {
 : about 'Quickest way to erase an alias'
 : ext 'EAFP; checking for alias under Bash involves either type (bad worst-case performance), or caching either compgen or alias -p output actually.'
 : completion 'complete -A alias'
   2>/dev/null unalias "$@" || true
 }
 
-.variable-type ()
-{
+.variable-type() {
 : about '~ <Symbols...>'
 : about 'Cache for just the declare flags'
 # XXX: not using ${var@A} bc that abbreviates non-export globals so not sure if
@@ -311,7 +299,7 @@ Shell() {
   for sym
   do
     if [[ ! ${_sh_vfl:+set} ]]; then
-      if_ok "$(2>/dev/null declare -p "${sym}")" ||
+      ..Core.pass-status "$(2>/dev/null declare -p "${sym}")" ||
         failerr "E$? getting ${sym@Q} typeset" || return
       : "${_:8}"
       : "${_%% *}"

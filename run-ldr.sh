@@ -8,7 +8,6 @@
 \builtin . ./common_setup.bash
 
 us-env -R us-env
-
 declare -gA _os_script_{load,path}
 us_part --hooks:declare,define,init us-term
 : "${usp_opts:=--alias --hooks:declare,define,init --export}"

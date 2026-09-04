@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Array() {
 : type group
@@ -15,7 +15,7 @@ Array() {
 : id sh/arr-addunique
 : dep sh/arr-find
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME: Array name, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array name')}"
   local item
   local -n _sys_arr_adduniq=${1:?}
   for item in "${@:2}"
@@ -36,8 +36,8 @@ Array() {
 : extended 'Callback tests wether to continue at each offset'
 : id sh/arr-firstseq
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME${*:+ ${*@Q}}: Array-name expected, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ ${*@Q}}: Argument sequence expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array-name expected')}"
+: input "${2:?$(:argv-err 2 'Argument sequence expected')}"
   local __si=2
   local -n __arr=${1}
   while ${us_argv_more:?} "${@:$__si}"
@@ -94,14 +94,14 @@ Array() {
 : param '~ <Array> <Match> [<Index-dest>]'
 : extended 'Look for glob match in (at value of) array'
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME: Array name expected, $ENV_CTX}"
-: input "${2?$FUNCNAME:$1: Match expression expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array name expected')}"
+: input "${2?$(:argv-err 2 'Match expression expected')}"
   local __sys_arr_i
   local __sys_arr_index
   local -n __sys_arr_find_in=${1:?} __sys_arr_found_index=${3:-__sys_arr_i}
   for ((__sys_arr_index=0; __sys_arr_index<${#__sys_arr_find_in[@]}; __sys_arr_index++))
   do
-    # shellcheck disable=2053 # allow variable as expression
+    #shellcheck disable=2053  # allow variable as expression
     [[ "${__sys_arr_find_in[__sys_arr_index]}" == ${2} ]] &&
       __sys_arr_found_index=$__sys_arr_index && return
   done
@@ -113,8 +113,8 @@ Array() {
 : param '~ <Array> <Match> [<Index-dest>]'
 : extended 'Look for regular expression match in (at value of) array'
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME: Array name expected, $ENV_CTX}"
-: input "${2?$FUNCNAME:$1: Match expression expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array name expected')}"
+: input "${2?$(:argv-err 2 'Match expression expected')}"
   local i _i
   local -n __sys_arr_find_in=${1:?} __sys_arr_found_index=${3:-_i}
   for ((i=0; i<${#__sys_arr_find_in[@]}; i++))
@@ -131,8 +131,8 @@ Array() {
 : extended 'Look for literal value in array'
 : id sys/arr-find
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME: Array name expected, $ENV_CTX}"
-: input "${2?$FUNCNAME:$1: Item value expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array name expected')}"
+: input "${2?$(:argv-err 2 'Item value expected')}"
   local i _i
   local -n __sys_arr_find_in=${1:?} __sys_arr_found_index=${3:-_i}
   [[ ${__sys_arr_find_in:+set} ]] ||
@@ -148,9 +148,9 @@ Array() {
 .find-value-key() {
 : about 'Set key for value if found in map, or return 1'
 : param '<Array> <Value> <Key-destination> ...'
-: input ${1:?$FUNCNAME${*:+ $*}: Input map, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Search value, $ENV_CTX}
-: input ${3:?$FUNCNAME${*:+ $*}: Destination variable, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Input map')}
+: input ${2:?$(:argv-err 2 'Search value')}
+: input ${3:?$(:argv-err 3 'Destination variable')}
   local -n __map_in=${1} __var_out=${3} __in='__map_in["$key"]'
   local search=${2} key
   [[ ${__map_in[*]:+set} ]] &&
@@ -167,14 +167,14 @@ Array() {
 : extended 'Building name lists for each node-type key, ie. directory listings'
 : extended 'Subsequent values for leafs are concatenated by newlines'
 : id sh/hmap/gen
-: input ${1:?$FUNCNAME${*:+ $*}: Input map, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Key path, $ENV_CTX}
-: input ${3:?$FUNCNAME${*:+ $*}: Value, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Input map')}
+: input ${2:?$(:argv-err 2 'Key path')}
+: input ${3:?$(:argv-err 3 'Value')}
 
   local i p
   local -n __us_arr_map=${1} _map='__us_arr_map["$p"]'
   set -f
-  # shellcheck disable=2206 # Expand words from string substution to items
+  #shellcheck disable=2206  # Expand words from string substution to items
   local -a path=( ${2//\// } )
   set +f
   for (( i = ${#path[*]}; i > -1; i-- ))
@@ -195,8 +195,8 @@ Array() {
 
 .invert-map() {
 : about 'Swap in[key]=value to out[value]=key'
-: input ${1:?$FUNCNAME${*:+ $*}: Input map, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Output map, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Input map')}
+: input ${2:?$(:argv-err 2 'Output map')}
   local -n __map_in=${1}
   local key
   local -n value_in="$1[\"\$key\"]"
@@ -211,7 +211,7 @@ Array() {
 : about 'Remove all duplicate items, leaving first occurence'
 : param "<Array> ..."
 : XXX would be trivial to write-in option to keep last occurence --last
-: input ${1:?$FUNCNAME${*:+ $*}: Array name, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Array name')}
   local -A __arr_unique
   local -n __arr_ref=${1}
   local index
@@ -229,13 +229,12 @@ Array() {
   done
 }
 
-# shellcheck disable=2295 # allow user patterns for string replace expansions
 .map-extensions() {
 : about 'Map trailing string part by applying trailing trim (once) and appending string value'
 : param '<Input-array> <Trailing-glob> <Append-string>'
-: input ${1:?$FUNCNAME${*:+ $*}: Input array, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Remove extension, $ENV_CTX}
-: input ${3:?$FUNCNAME${*:+ $*}: Append string, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Input array')}
+: input ${2:?$(:argv-err 2 'Remove extension')}
+: input ${3:?$(:argv-err 3 'Append string')}
 
   local _map_from=${2} _map_to=${3} _set_new
   .map-set '_set_new=${_set_in%$_map_from};
@@ -246,8 +245,8 @@ Array() {
 : about 'Static script iterator'
 : param '~ <Script-string> <Input-array> [<Destination-array>] ...'
 : extended 'Interface to rewrite or map indexed array values'
-: input ${1:?$FUNCNAME${*:+ $*}: Script body, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Input array, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Script body')}
+: input ${2:?$(:argv-err 2 'Input array')}
 
   local _map_scr=${1} _set_idx
   local -n __arr_in=${2} __arr_out=${3:-$2}
@@ -268,7 +267,7 @@ Array() {
 : about 'See add-unique for argument input'
 : param ' ~ <Array> <Arrays...>'
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME: Array name, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array name')}"
   local -n _sys_arr_mrguniq=${1:?}
   local -n __arr
   local item
@@ -287,8 +286,8 @@ Array() {
 : extended 'Scripts can refer to or set _arr_in and _arr_out, and iterator _arr_key'
 : extended 'Setting output without destination is same as setting input'
 
-: input ${1:?$FUNCNAME${*:+ $*}: Script body, $ENV_CTX}
-: input ${2:?$FUNCNAME${*:+ $*}: Input array, $ENV_CTX}
+: input ${1:?$(:argv-err 1 'Script body')}
+: input ${2:?$(:argv-err 2 'Input array')}
 
   local _arr_scr=${1} _arr_key
   local -n __arr_in=${2} __arr_out=${3:-$2}
@@ -301,8 +300,8 @@ Array() {
 }
 
 .sort() {
-: param "<Arr-in> ..."
-: input "${1:?$FUNCNAME${*:+ $*}: Input array(s) expected, $ENV_CTX}"
+: param "~ <Arr-in> ..."
+: input "${1:?$(:argv-err 1 'Input array(s) expected')}"
   local -n __arr_in=${1}
   local -n __arr_out=${2:-$1}
   IFS=$'\n'
@@ -311,15 +310,15 @@ Array() {
 }
 
 .union() {
-: param "<Arr-in...> <Arr-out>"
+: param "~ <Arr-in...> <Arr-out>"
 : id sh/arr-union
 : description "Deduplicated merge, as if arrays are sets. To modify an existing array,"
 : description "see make-unique. Use merge-unique to avoid building a deduplication table."
 : extended "Array out can exist, but it must already be a unique set"
 : completion 'complete -A arrayvar'
-: input "${1:?$FUNCNAME${*:+ $*}: Input array(s) expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Input array(s) expected')}"
 : input "${@: -1}"
-  : "${_:?$FUNCNAME${*:+ $*}: Output name expected, $ENV_CTX}"
+: input "${_:?$(:unset-err $(($#-1)) "Output name expected")}"
 
   [[ $# -gt 1 ]] || return ${_E_GAE:?}
   local -A __arr_unique

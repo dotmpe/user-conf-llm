@@ -11,31 +11,35 @@ XREDO_TARGET="${REDO_PWD:+$REDO_PWD/}${REDO_TARGET:?}"
 XREDO_BASE=${XREDO_TARGET%%:*}
 XREDO_NODE=${XREDO_TARGET%:*}
 
-xredo_all_targets=( @build @test )
+xredo_all_targets=( @build @test @pack )
 
 case "${XREDO_TARGET}" in
 
 ( @build )
-    redo-ifchange .build-select.sh \
-      dist/usrtools_usrconf/uc_dev.bash \
-      dist/usrtools_usrconf/uc_docker.bash \
-      dist/usrtools_usrconf/uc_loader.bash \
-      dist/usrtools_usrconf/uc_loader_meta.bash \
-      dist/usrtools_usrconf/uc_profile.bash \
-      dist/usrtools_usrscr/us_core.bash \
-      dist/usrtools_usrscr/us_log.bash \
-      dist/usrtools_usrscr/us_part.bash \
-      dist/usrtools_usrscr/us_say.bash \
-      dist/usrtools_usrscr/us_str.bash \
-      dist/usrtools_usrscr/us_pp.bash
+    sources=( src/*/*.inc )
+    for src in "${sources[@]}"; do
+      : "pack/ns1/${src#src/}"
+      targets+=( "${_%.inc}.bash" )
+    done
+    redo-ifchange .build-select.sh "${targets[@]}"
   ;;
 
 ( @config )
     TODO config
   ;;
 
+( @test )
+    redo-always
+    say.debug "Starting test"
+    for x in pack/ns1/usrtools_usr{conf,scr}/*.bash; do
+      targets+=( @test:"$x" )
+    done
+    redo-ifchange "${targets[@]}" || return
+    say.info "All packs tested loaded OK"
+  ;;
+
 ( @test:* )
-    local script=${XREDO_TARGET#@test:}
+    script=${XREDO_TARGET#@test:}
     redo-ifchange "$script"
     ( \builtin . "$script" ) ||
       failerr "Loading ${script@Q}" || return
@@ -43,26 +47,24 @@ case "${XREDO_TARGET}" in
     say.v "Load and shellcheck passed for ${script@Q}"
   ;;
 
-( @test )
+( @pack )
     redo-always
-    say.debug "Starting test"
-    for x in dist/usrtools_usr{conf,scr}/*.bash; do
-      targets+=( @test:"$x" )
-    done
-    redo-ifchange "${targets[@]}" || return
-    say.info "All dist tested loaded OK"
+    # TODO package
   ;;
 
-( dist/* )
-    : "${XREDO_TARGET#dist/}"
+
+( pack/*/* )
+    : "${XREDO_TARGET#pack/ns[0-9]/}"
     src=src/${_%.bash}.inc
     redo-ifchange .build-select.sh &&
     redo-ifchange "$src" &&
     mkdir -p "${XREDO_TARGET%/*}" &&
     \builtin . src/usrtools_usrscr/us_pp.inc &&
     cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static} &&
+    \builtin . src/usrtools_usrscr/us_fmt_inc.inc &&
     .run "$src" > "$BUILD_TARGET_TMP"
   ;;
+
 
 ( * )
     return ${_E_next:-196}

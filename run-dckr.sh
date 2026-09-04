@@ -1,6 +1,7 @@
 #!/bin/bash
 
 \builtin . ./common_setup.bash
+shopt -s extdebug expand_aliases
 
 us-env -R us-env
 declare -gA _os_script_{load,path}
@@ -10,26 +11,33 @@ us_part --hooks:declare,define,init us-term
 \builtin . ./common_env.bash
 METADIR=.local
 
-us_part $usp_opts --reload uc-loader
-. <(uc_inc_pre usrtools_usrconf/uc_docker)
+\builtin . ./common-dsl.bash
 
-# FIXME: uc_inc usrtools_usrconf/uc_docker.inc
-/usrtools_usrconf/uc_docker/_hooks/declare
-/usrtools_usrconf/uc_docker/_hooks/init
+#us_part $usp_opts --reload uc-loader
+#. <(uc_inc_pre usrtools_usrconf/uc_dckr)
+# FIXME: uc_inc usrtools_usrconf/uc_dckr.inc
+. src/usrtools_usrscr/us_dckr.inc
+
+._hooks:global
+._hooks:load
+
 if [[ ! ${uc_docker_imgconf_from['deb-bookworm:dev']:+set} ]]; then
-  /usrtools_usrconf/uc_docker/new_config \
+  .new_config \
     'deb-bookworm:dev' 'debian:bookworm-slim' \
     'bash ca-certificates curl git procps vim' \
-    --extra 'RUN curl -s https://bashunit.com/install.sh | bash -s -- /usr/local/bin
-
+    --extra \
+'RUN curl -s https://bashunit.com/install.sh | bash -s -- /usr/local/bin
+COPY etc/bash/user-rc.sh /root/.bashrc
+COPY pack/ns1 /usr/share
 WORKDIR /project
 '
 fi
+
 if [[ ! ${uc_docker_imgconf_from['deb-bookworm-bash:dev']:+set} ]]; then
 
   # TODO: try buildpack-deps:bookworm to speed up build tools install
 
-  /usrtools_usrconf/uc_docker/new_config \
+  .new_config \
     'deb-bookworm-bash:dev' 'debian:bookworm-slim' \
     'build-essential wget libreadline-dev zlib1g-dev' \
     --extra '
@@ -47,12 +55,13 @@ WORKDIR /project
 '
 fi
 # FIXME: cache_setmap should update session
-/usrtools_usrconf/uc_docker/_hooks/init
+._hooks:load
+
 #declare -p uc_docker_imgconf_{from,packages,extra,settings}
 #for img in "${!uc_docker_imgconf_from[@]}"; do
 #  _ docker rmi "${img}"
 #  /usrtools_usrconf/uc_docker/build "$img"
 #done
-/usrtools_usrconf/uc_docker/build 'deb-bookworm:dev'
-/usrtools_usrconf/uc_docker/start 'deb-bookworm:dev' "$@"
+.build 'deb-bookworm:dev'
+.start 'deb-bookworm:dev' "$@"
 #

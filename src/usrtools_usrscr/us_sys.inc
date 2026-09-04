@@ -1,7 +1,7 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 System() {
 : type group
@@ -18,9 +18,9 @@ System() {
 : extended 'For maps, use call-apply-map to iterate on keys instead and apply both key and value. '
 : id sh/sys-call-apply
 : oldid sh/sys-exec-apply
-: input "${1:?$FUNCNAME${*:+ $*}: Command line expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Command line expected')}"
 : input "${*: -1:1}"
-: input "${_:?$FUNCNAME${*:+ $*}: Sequence array name expected, $ENV_CTX}"
+: input "${_:?$(:argv-err \* 'Sequence array name expected')}"
   local _sys_call_{all,arg,ret,stat} __scao
   [[ "$1" = "--all" ]] && __scao=2 _sys_call_all=1 || __scao=1 _sys_call_all=0
   local -n _sys_call_seq=${*: -1:1}
@@ -44,9 +44,9 @@ System() {
 : param '<Cmd...> <Map>'
 : about 'Call command with <Key> <Value-> <Arrayname> for all keys in hashtable'
 : extended 'This is identical to call-apply except it iterates on keys'
-: input "${1:?$FUNCNAME${*:+ $*}: Command line expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Command line expected')}"
 : input "${*: -1:1}"
-: input "${_:?$FUNCNAME${*:+ $*}: Hashtable array name expected, $ENV_CTX}"
+: input "${_:?$(:argv-err \* 'Hashtable array name expected')}"
   local _sys_call_{all,key,ret,stat} __scao
   [[ "$1" = "--all" ]] && __scao=2 _sys_call_all=1 || __scao=1 _sys_call_all=0
   local -n _sys_call_map=${*: -1:1}
@@ -69,18 +69,18 @@ System() {
 
 .read-call() {
 : about "Read command's standard ouput (lines) into array"
+: param "~ <Array-name> <Cmd...>"
 : extended "Reads onto end for existing array. This invokes the command, and "
 : extended "then feeds the output to mapfile."
 : notes "To read words as items, see _Sys_Read_Items"
 : notes "To just read file data "
-: param "<Array-name> <Cmd...>"
 : id sh/sys-read-call
 : group Shell/Sys
 : oldid sh/sys-read-exec
 : aliases _Sys_Read_Exec _Sh_Read_Exec sys_exec_mapfile
   : XXX maybe call this _Sys_Read_Onto? _Sh_Mapfile
-: input "${1:?$FUNCNAME${*:+ $*}: Array-name expected, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ $*}: Command line expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Array-name expected')}"
+: input "${2:?$(:argv-err 2 'Command line expected')}"
   local -n __sys_read_call_arr=${1}
   local outname=${1} offset
   [[ ${__sys_read_call_arr[*]:+set} ]] &&
@@ -93,9 +93,9 @@ System() {
 .read-call-to-map() {
 : about 'Read output lines as key-value pairs separated by given string'
 : param '~ <Hash> <Sep> <Command...>'
-: input "${1:?$FUNCNAME${*:+ $*}: Hash name expected, $ENV_CTX}"
-: input "${2:?$FUNCNAME${*:+ $*}: Separator string expected, $ENV_CTX}"
-: input "${3:?$FUNCNAME${*:+ $*}: Command line expected, $ENV_CTX}"
+: input "${1:?$(:argv-err 1 'Hash name expected')}"
+: input "${2:?$(:argv-err 2 'Separator string expected')}"
+: input "${3:?$(:argv-err 3 'Command line expected')}"
   local -n _ef95aea5_arr=${1}
   local _ef95aea5_sep=${2} _ef95aea5_{key,val}
   ..Core.pass-status "$("${@:3}")" &&

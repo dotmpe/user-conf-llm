@@ -1,20 +1,34 @@
 #.inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 #
-
 Pre-Processor() {
 : tag group
+: man '~ is a Bash read loop that manages a source stack and invokes a line
+matcher. If unhandled by the matcher, the pre-processor loop emits the line
+again.
+
+The matcher'\''s return status determines the behavior of the loop.
+
+  0              Read next line
+  _E_break       Stop read loop
+  _E_continue    Continue with current line (but keep value)
+  _E_next        Emit and read next line
+  _E_retry       Re-read line value (but do not increment line counter)
+
+Both E:continue and E:retry skip the default emit but keep invoking the matcher.
+But only E:continue keeps the line data until it clears. These two can be used
+to reprocess data. While us_pp_line can hold one line of preprocessed data,
+multiple lines of data must be pushed back onto the source stack as a block, so
+that an actual line can be re-read from it. '
 }
-._hooks() { : -A : ; }
+._hooks() { :- : -A : ; }
 ._hooks:global() {
-: env "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
 : env "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
 : env "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
-#: env "${US_PP_STATE_MAPSPEC:=uc_pp_{name_map,meta_static\}}"
-#  declare -ga us_pp_state_assocs
+  declare -g us_pp_run_settings
 }
 ._hooks:load() {
 : env "${_E_break:?}"
@@ -22,10 +36,28 @@ Pre-Processor() {
 : env "${_E_MA:?}"
 : env "${_E_next:?}"
 : env "${_E_retry:?}"
-  #\builtin read -ra us_pp_state_assocs < <(
-  #  \builtin . <(echo echo ${US_PP_STATE_MAPSPEC:?})) &&
-  #cache_loadmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]:?}"
+  
+: env "${US_PP_RUN_SPEC:=us_pp_{input:._source,reader:cb,matcher:cb\}}"
+  \builtin read -ra us_pp_run_settings < <(
+    \builtin . <(echo echo ${US_PP_RUN_SPEC:?}))
+  declare -p us_pp_run_settings
+
   cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
+}
+
+._source() {
+: about 'Reset .run to given source file'
+  us_pp_input=${1}
+  local new_fd
+  if [[ ! ${us_pp_filter-} ]]
+  then
+    exec {new_fd}<"$us_pp_input"
+  else
+    exec {new_fd}< <(< "$us_pp_input" . <(echo "${us_pp_filter}"))
+  fi
+  us_pp_sources+=( "$us_pp_input" )
+  us_pp_input_stack=( "$new_fd" )
+  us_pp_input_lnr=( 0 )
 }
 
 ._concat-source () {
@@ -34,75 +66,6 @@ Pre-Processor() {
   # NOTE read is at end of stack, so concat is actually unshift
   us_pp_input_stack=( "$new_fd" "${us_pp_input_stack[@]}" )
   us_pp_input_lnr=( 0 "${us_pp_input_lnr[@]}" )
-}
-
-._match-inblock-line() {
-  local -n _from2=${1}
-  case "${_from2}" in
-
-  ( :_\ * )
-      : "${_from2//; /$';\n'}"
-      : "${_//" && "/$' && \n'}"
-      : "${_//" || "/$' || \n'}"
-      local expanded=$_
-      ._unshift-lineblock expanded
-      return ${_E_retry:?}
-    ;;
-  ( ":"[A-Za-z_-]* )
-      : "${_from2% *}"
-      us_pp_line=${us_pp_line/"${_}"/"_global ${_:1}"}
-    ;;
-  ( "."[A-Za-z_-]* )
-      : "${_from2% *}"
-      us_pp_line=${us_pp_line/"${_}"/"${_ns0_pre}${_}"}
-    ;;
-  esac
-}
-
-._match-line() {
-  local -n _from=${1}
-  case "${_from}" in
-
-  ( [A-Za-z_]*"() {"* )  :_  ._read-modulename   ;;
-  ( ": "* )              :_  ._read-meta         ;;
-  ( ":"[A-Za-z_-]* )     :_  ._read-specialname  ;;
-  ( "."[A-Za-z_-]* )     :_  ._read-localname    ;;
-
-  ( \} )
-      us_pp_line=${us_pp_line}" # /${_ns0_nameref}"
-      if [[ ${_ns0_pre} != "${_ns0_nameref}" ]]; then
-       _ns0_nameref=${_ns0_nameref%.*} 
-      fi
-    ;;
-
-  ( \#shellcheck\ * )
-      return ${_E_next:?}
-    ;;
-
-  ( \#\ * | \# ) : no op
-      return ${_E_retry:?}
-    ;;
-
-  ( \ * ) 
-      if [[ ${_ns0_pre} != "${_ns0_nameref}" ]]; then
-        local _scrline=${_from}
-        :globstrip-charsleft _scrline $'[\ \t]'
-        if [[ ${_scrline} = \#shellcheck\ * ]]; then
-          return ${_E_next:?}
-        elif [[ ${_scrline:0:1} = \# ]]; then
-          return ${_E_retry:?}
-        fi
-        if [[ ${_scrline} = *" :_ "* ]]; then
-          local expanded=${us_pp_line//' :_ '/$'\n'}
-          ._unshift-lineblock expanded
-          return ${_E_retry:?}
-        fi
-        ._match-inblock-line _scrline || return
-      fi
-    ;;
-
-  esac
-  return ${_E_next:?}
 }
 
 ._open-filesource () {
@@ -114,10 +77,11 @@ Pre-Processor() {
 
 ._read-line() {
   (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
+    # TODO: pass var?
   ._shift-line || return
-  ((us_pp_srclnr+=1))
+  ((${2:-0})) || ((us_pp_srclnr+=1))
   # XXX: optional: strip trailing CR, count lines, etc.
-  return 0 
+  return 0
 }
 
 ._read-localname() {
@@ -150,7 +114,7 @@ Pre-Processor() {
 
 ._shift-line() {
   if ! IFS= read -r us_pp_line <&$us_pp_fd; then
-    # EOF on current FD
+    # close after EOF on current FD
     exec {us_pp_fd}<&- || {
       us_pp_fail_stat=$?
       us_pp_fail_fd=$us_pp_fd
@@ -175,7 +139,7 @@ Pre-Processor() {
   :_debug "Reading lineblock [${#_str}] from ${FUNCNAME[1]} at FD #${new_fd}"
 }
 
-._unshift-source () {
+._unshift-source() {
   local new_fd
   ._open-filesource "$1" &&
   # NOTE read is at end of stack, so unshift is just push
@@ -184,45 +148,55 @@ Pre-Processor() {
 }
 
 .run() {
-: param '~ <Source-path> ...'
+: param '~ <Source> [<Matcher>] ...'
 : tag util
-: env _E_MA
-  (($#)) || return ${_E_MA:?}
 : input "${1:?$(:argv-err 1 "Source path")}"
-  local us_pp_input=${1}
-  ___=._run-common+startup; inline-fun
-  
+
+  #:read-setting US_PP_RUN_SPEC "$@"
+  local us_pp_plug=${2:-us_fmt_inc}
+  #\builtin . <(sh_funbody ._run-common+startup)
+  inline ___=._run-common+startup; inline-fun
+  ._source "$1" || return
+
   while true; do
 
     if [[ -z ${us_pp_line:+set} || ${us_pp_retry:-0} -eq 1 ]]; then
-      ._read-line || {
+      ._read-line us_pp_line ${us_pp_line:+1} || {
         local st=$?
         (( st == _E_break )) && break
         (( st == _E_next  )) && continue
-        failerr "At $us_pp_lnr:$us_pp_srclnr while trying to read $us_pp_input" $st || return
+        : "$us_pp_lnr"; (( _ == us_pp_srclnr )) || : "$_:$us_pp_srclnr"
+        failerr "At $_ while trying to read $us_pp_input" $st || return
       }
-      ((us_pp_lnr+=1))
+      ((${us_pp_retry:-0})) && us_pp_retry=0 || ((us_pp_lnr+=1))
     fi
 
-    ._match-line us_pp_line && handled=1 || {
+    #"${us_pp_core}"_match_line us_pp_line && handled=1 || {
+    ._match-line us_pp_line us_pp_line && handled=1 || {
       local st=$?
-      (( st == _E_continue )) && continue
-      (( st == _E_retry    )) && { us_pp_line= ; continue; }
-      (( st == _E_next     )) && handled=0 ||
-        failerr "At $us_pp_lnr:$us_pp_srclnr ${us_pp_line@Q}" $st || return
+      (( st == _E_break    )) && break
+      (( st == _E_continue )) && continue  # ASSERT !us_pp_line should be consumed
+      (( st == _E_retry    )) && { us_pp_retry=1; continue; }
+      (( st == _E_next     )) && handled=0 || {
+        : "$us_pp_lnr"; (( _ == us_pp_srclnr )) || : "$_:$us_pp_srclnr"
+        failerr "At $_ ${us_pp_line@Q}" $st || return
+      }
     }
 
     if (( !handled )); then
-      case ${us_pp_mode:-normal} in
-      ( normal )  ._emit-line ;;  # pass-through / rewrite
-      ( block )   ._block-append ;;
-      ( * )
-        failerr "unknown mode ${us_pp_mode@Q}" || return
-      esac
+      ._emit-line
+      #"$us_pp_core"_emit us_pp_line
     fi
-
     us_pp_line=
   done
+
+  if (( ${#us_pp_input_stack[*]} >= 0 )); then
+    say.err "Closing ${#us_pp_input_stack[*]} remaining unread inputs"
+    local fd
+    for fd in "${us_pp_input_stack[@]}"; do
+      exec {fd}<&- || _ failerr "closing FD $fd (ignored)"
+    done
+  fi
 
   if ((DEBUG)); then
     # Peek at results
@@ -241,19 +215,11 @@ Pre-Processor() {
 }
 
 ._block-append() {
-  current_block+=${us_pp_line}$'\n'
+  us_pp_block+=${us_pp_line}$'\n'
 }
 
 ._run-common+startup() {
-  # FIXME: give global access to accumulated sources, for cache invalidation etc.
-  # Should probably prepare a copy for these on request, after wrapping up run
-  declare -a us_pp_sources
-  #declare -A us_pp_name_map
-  #declare -A us_pp_meta_static
-
-  local us_pp_{line,mode,retry}
-
-  local current_block
+  local us_pp_{block,line,mode,retry}
 
   local -n us_pp_fd='us_pp_input_stack[-1]'
   local -n us_pp_srclnr='us_pp_input_lnr[-1]'
@@ -264,17 +230,11 @@ Pre-Processor() {
     _ failerr "Language expected for prefilter and/or comment + shebang/modeline formats (ignored)"
   : "${us_pp_lang:=}"
 
-  # First apply static script as filter on input
-  local new_fd
-  if [[ ! ${us_pp_filter-} ]]
-  then
-    exec {new_fd}<"$us_pp_input"
-  else
-    exec {new_fd}< <(< "$us_pp_input" . <(echo "${us_pp_filter}"))
-  fi
-  us_pp_sources+=( "$us_pp_input" )
-  us_pp_input_stack=( "$new_fd" )
-  us_pp_input_lnr=( 0 )
+  # FIXME: give global access to accumulated sources, for cache invalidation etc.
+  # Should probably prepare a copy for these on request, after wrapping up run
+  declare -a us_pp_sources
+  #declare -A us_pp_name_map
+  #declare -A us_pp_meta_static
 
   #if ((do_outline))
   #then
@@ -284,6 +244,7 @@ Pre-Processor() {
 
   # TODO: plugin namespace translator
   local _ns0_{pre,namref}
+  say.err "Args $*"
   _ns0_pre=User-Script
   _ns0_nameref=${_ns0_pre}
 }

@@ -1,5 +1,5 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
 #
 # Distributed under terms of the MIT license.

@@ -10,14 +10,15 @@ if [[ ${0##*/} = common-dsl.bash ]]; then
   shopt -s extdebug
 fi
 
-:_() {
-: about 'Placeholder for pseudo-macro to unfold Bash line'
+:-() {
+: about 'Marker for pseudo-macro in pre-processor'
 : param '~ <Sub-command...>'
   ! (($#)) || "$@"
 }
 
 :argv-err() {
-: param '~ <Position> <Label>'
+: about 'Output helper for unset/undefined argument position expressions'
+: param '~ <Position> <Label> <"expected "> <"at position "> ...'
   set -- "${FUNCNAME[1]}" "$2" "${3:-expected }" "${4:-at position }" "$1"
   printf '%s: %s %s%s%i\n' "$@"
 }
@@ -29,13 +30,21 @@ fi
 }
 
 :unset-err() {
-: param '~ <Symbol> <Label>'
+: about 'Output helper for unset/undefined name expressions'
+: param '~ <Symbol> <Label> <"expected "> <"at name "> ...'
   set -- "${FUNCNAME[1]}" "$2" "${3:-expected }" "${4:-at name }" "$1"
   printf '%s: %s %s%s%s\n' "$@"
 }
 
 to-v() {
+: about 'Put output on USER output (regardless of verbosity)'
+: param '~ <...>'
+: tag dev
   "$@" >&${USER_FD}
+}
+
+inline() {
+  ! (($#)) || say.err "Inline broken (fun call)"
 }
 
 # sometimes when writing it might help to have dev-mode only defs, like this:
@@ -44,6 +53,7 @@ if shopt -q expand_aliases; then
   alias 'say@v=:say-when $VERBOSITY'
   #shellcheck disable=2142  # alias referencing positionals is fine, actually
   alias functxln='say@v "$FUNCNAME: ${*@Q} [$#]"'
+  alias inline='\inline;'
 else
   printf.line() { printf '%s\\n' "$@"; }
   say@v() { :say-when $VERBOSITY "$1"; }
@@ -131,8 +141,8 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 # that work on arrays.
 
 :bind-args() {
+: about 'Expand variable names and zip-bind remaining arguments as reference name'
 : param '~ <Expansion> <Variables...>'
-  (($#)) || return ${_E_MA:?}
 : input "${1:?$(:argv-err 1 'Brace or glob expression')}"
 : input "${2:?$(:argv-err 2 'Variable references')}"
   ___=:_args+names; inline-fun-status
@@ -140,6 +150,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 }
 
 :copy-args() {
+: about 'Expand variable names and zip-copy values from remaining arguments as variable names'
 : param '~ <Expansion> <Variables...>'
 : input "${1:?$(:argv-err 1 'Brace or glob expression')}"
 : input "${2:?$(:argv-err 2 'Source variables')}"
@@ -148,6 +159,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 }
 
 :read-args() {
+: about 'Expand variable names and zip-assign remaining arguments as values'
 : param '~ <Expansion> <Values...>'
 : input "${1:?$(:argv-err 1 'Brace or glob expression')}"
 : input "${2:?$(:argv-err 2 'Assignment values')}"
@@ -155,7 +167,17 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
   :zip-assign.args names "${@:2}"
 }
 
+:read-setting() {
+: about 'A read-args wrapper that takes the expression from a variable'
+: param '~ <Expression-name> <Values...>'
+: input "${1:?$(:argv-err 1 'Expansion variable name')}"
+  local -n _sk=${1}
+: input "${_sk:?$(:unset-err $1 "Expansion expression")}"
+  :read-args "$_sk" "${@:2}"
+}
+
 :zip-assign.args() {
+: about 'Pair names from array with given values and assign'
 : param '~ <Array> <Values...>'
 : input "${1:?$(:argv-err 1 'Array name')}"
 : input "${2:?$(:argv-err 2 'Assignment values')}"
@@ -168,6 +190,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 }
 
 :zip-bind.args() {
+: about 'Make by-name variables from names in array paired with given variables'
 : param '~ <Array> <Variables...>'
 : input "${1:?$(:argv-err 1 'Array name')}"
 : input "${2:?$(:argv-err 2 'Variable references')}"
@@ -181,6 +204,7 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 }
 
 :zip-copy.args() {
+: about 'Zip-assign current values, pairing variables to variable names in array'
 : param '~ <Array> <Variables...>'
 : input "${1:?$(:argv-err 1 'Array name')}"
 : input "${2:?$(:argv-err 2 'Source variables')}"

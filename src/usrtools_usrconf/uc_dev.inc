@@ -1,18 +1,28 @@
 # .inc file, see User-Conf or User-Script us-inc for specification.
-# 
+#
 # Copyright 2026 .mpe  <me@dotmpe.com>
-# 
+#
 # Distributed under terms of the MIT license.
 Dev() {
 : tag dev
 }
-._hooks() { _: : -A : ; }
+._hooks() { :- : -A : ; }
 ._hooks:global() {
+# XXX: example layout for data module with hashtables sequence in cache
+: env "${US_DEV_CACHE:=${CACHE_DIR:-.local/cache}}"
+: env "${US_DEV_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
+: env "${US_DEV_STATE:=${US_DEV_DATADIR:?}/uc_dev_state.data.bash}"
+: env "${US_DEV_STATE_MAPSPEC:=uc_dev_{map{0..3\}\}}"
+  declare -ga us_dev_state_assocs
 : env "${UC_DEV_PATHS:=${UC_DEV_PATHS:-.}}"
   append_lookup "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
 }
+._hooks:load() {
+  \builtin read -ra us_dev_state_assocs < <(
+    \builtin . <(echo echo ${US_DEV_STATE_MAPSPEC:?}))
+  cache_loadmaps "${US_DEV_STATE:?}" "${us_dev_state_assocs[@]:?}"
+}
 
-#shellcheck disable=SC2120
 .scan() {
 : about 'Scan for TODO/XXX/FIXME tags in project directories'
   ! (($#)) || return ${_E_GAE:?}

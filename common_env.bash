@@ -30,6 +30,8 @@ declare -ga uc_cb_exit
 }
 
 
+ENV_CTX="$$"'$'"$-/${0##*/}"
+
 if [[ ! ${REDO_RUNID:+set} ]]; then
   #exec 2> >(str_prefix "  $ENV_CTX: ")
   trap ':exit' EXIT
@@ -46,8 +48,6 @@ else
 
   exec {USER_FD}>&2
 fi
-
-ENV_CTX="$$"'$'"$-/${0##*/}"
 
 : "${_E_continue:=195}"
 : "${_E_next:=196}"

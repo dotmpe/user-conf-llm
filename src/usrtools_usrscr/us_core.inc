@@ -1,5 +1,4 @@
-._() {
-: name 'Core'
+Core() {
 : about 'Initial step of bootstrap sequence'
 #: type part  # TODO consolidate with older composure stuff:
 : type group
