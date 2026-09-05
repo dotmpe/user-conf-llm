@@ -11,21 +11,43 @@ XREDO_TARGET="${REDO_PWD:+$REDO_PWD/}${REDO_TARGET:?}"
 XREDO_BASE=${XREDO_TARGET%%:*}
 XREDO_NODE=${XREDO_TARGET%:*}
 
-xredo_all_targets=( @build @test @pack )
+ETC=.local/etc
+VAR=.local/var
+
+case "${XREDO_TARGET}" in @config ) ;; ( * )
+  if ! redo-ifdone @config; then
+      say.err "Must run redo @config first"
+      exit 1
+  fi
+esac
 
 case "${XREDO_TARGET}" in
 
 ( @build )
-    sources=( src/*/*.inc )
-    for src in "${sources[@]}"; do
-      : "pack/ns1/${src#src/}"
-      targets+=( "${_%.inc}.bash" )
-    done
-    redo-ifchange .build-select.sh "${targets[@]}"
+    \builtin . ./$VAR/redo_default.bash &&
+    for src in "${sources[@]:?}"; do
+      src=${src#src/}
+      targets+=( "@index:${src:?}" )
+      targets+=( "pack/ns1/${src%.inc}.bash" )
+    done &&
+    #>&2 :dump-pretty-globals sources targets &&
+    redo-ifchange .build-select.sh "${sources[@]}" "${targets[@]}"
   ;;
 
 ( @config )
-    TODO config
+    redo-ifchange .build-select.sh
+    sources=( src/*/*.inc ) &&
+    [[ ${sources[*]:+set} ]] || say.err "No sources found" || exit
+    #:dump-global-pretty sources >| ./$VAR/redo_default.bash &&
+    declare -p sources >| ./$VAR/redo_default.bash &&
+    redo-stamp <<< "${sources[@]}"
+  ;;
+
+( @index:* )
+    src=src/${XREDO_TARGET#@index:}
+    redo-ifchange "$src" &&
+    \builtin . ./init-pp.sh >&2 &&
+    .run "$src" .match-line > /dev/null || failerr "Indexing ${src@Q}"
   ;;
 
 ( @test )
@@ -48,15 +70,14 @@ case "${XREDO_TARGET}" in
 
 ( @pack )
     redo-always
-    # TODO package
+    TODO package
   ;;
 
 
 ( pack/*/* )
     : "${XREDO_TARGET#pack/ns[0-9]/}"
     src=src/${_%.bash}.inc
-    redo-ifchange .build-select.sh &&
-    redo-ifchange "$src" &&
+    redo-ifchange .build-select.sh "$src" &&
     mkdir -p "${XREDO_TARGET%/*}" &&
     \builtin . ./init-pp.sh >&2 &&
     .run "$src" .match-line > "$BUILD_TARGET_TMP" ||
@@ -65,6 +86,8 @@ case "${XREDO_TARGET}" in
 
 
 ( * )
+    cache_load ./$ETC/redo_default.bash
+
     return ${_E_next:-196}
 
 esac

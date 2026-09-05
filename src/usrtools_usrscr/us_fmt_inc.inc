@@ -109,7 +109,14 @@ Include() {
   done
   _ns0_arr=$_ns0_pre.${!dest}
   ..Namespace.map-to-ns1 _ns{0,1}_arr &&
-  ..Shell.dump-globals ${!dest}:${_ns1_arr:?}
+    # FIXME: should output as block
+  :pass "$(
+    ..Shell.dump-globals ${!dest}:${_ns1_arr:?}
+  )" &&
+  : "${_// \[/$'\n  ['}" &&
+  : "${_//=\(\[/$'=(\n  ['}" &&
+  printf '\n%s\n\n' "$_"
+  [[ ! ${us_pp_line:+set} ]] || return ${_E_continue:?}
 }
 
 ._read-localname() {

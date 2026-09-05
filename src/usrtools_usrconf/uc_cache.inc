@@ -9,7 +9,7 @@ Cache() {
   #  [cache_loadmaps]=.load-maps
   #)
 }
-._hooks() { :- : -A : ; }
+._hooks() { : -A : ; }
 ._hooks:global() {
 : env "${UC_CACHE_DIR:=${CACHE_DIR:-.local/cache}}"
 : env "${UC_CACHE_STATE:=${UC_CACHE_DIR:?}/uc_cache.data.bash}"

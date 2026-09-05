@@ -27,7 +27,7 @@ on their own options and needs.
 : type part
 }
 
-._hooks() { :- : -A : ; }
+._hooks() { : -A : ; }
 ._hooks:declare() {
 : env "${ENV_CTX:=$0[$$]}"
 : env "${VERBOSITY:=1}"

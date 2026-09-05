@@ -188,7 +188,8 @@ that an actual line can be re-read from it. '
   # TODO: manage state per source
   #cache_dumpmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]}"
   >| "${US_PP_STATE:?}" \
-  ..Shell.dump-globals us_pp_{name_map,meta_static}
+  :dump-pretty-globals us_pp_{name_map,meta_static}
+  #..Shell.dump-globals us_pp_{name_map,meta_static}
 }
 
 ._run-common+startup() {

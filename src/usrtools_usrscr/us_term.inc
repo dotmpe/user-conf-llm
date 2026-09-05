@@ -7,10 +7,7 @@ Terminal() {
 : type group
 }
 
-._hooks() {
-: -A
-}
-
+._hooks() { : -A : ; }
 ._hooks:global() {
   declare -gA us_term_map=()
   declare -gA \
@@ -248,8 +245,7 @@ WRITE \033(B rmacs'
 .video-capenv() {
   local var fail=0
   local -n capname='us_term_capvar[$var]'
-  for var in "${!us_term_capvar[@]}"
-  do
+  for var in "${!us_term_capvar[@]:?}"; do
     : "${capname:?$FUNCNAME${*:+ $*}: Capability name for $var}"
     :pass "$(2>/dev/null tput $capname)" &&
     declare -g $var=$_ || {

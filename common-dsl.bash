@@ -276,12 +276,82 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
   done
 }
 
+declare -gA us_shell_tspec
+
+User-Script.Shell.variable-type-cache() {
+: about '~ <Symbols...>'
+: about 'Cache for just the declare flags'
+# XXX: not using ${var@A} bc that abbreviates non-export globals so not sure if
+# that is better/faster
+  local sym
+  local -n _sh_vfl='us_shell_tspec["$sym"]'
+  for sym; do
+    if [[ ! ${_sh_vfl:+set} ]]; then
+      if_ok "$(2>/dev/null declare -p "${sym}")" ||
+        failerr "E$? getting ${sym@Q} typeset" || return
+      : "${_:8}"
+      : "${_%% *}"
+      _sh_vfl=$_
+    fi
+  done
+}
+
+:sort-array() {
+: param "<Arr-in> ..."
+: input "${1:?$FUNCNAME${*:+ $*}: Input array(s) expected, $ENV_CTX}"
+  local -n __arr_in=${1}
+  local -n __arr_out=${2:-$1}
+  IFS=$'\n'
+  if_ok "$(<<<"${__arr_in[*]}" sort)" && mapfile -t ${!__arr_out} <<< "$_"
+  IFS=$' \t\n'
+}
+
+:dump-pretty-global-array() {
+  local sym=${1:?} assoc=0
+  local -n _sh_vfl='us_shell_tspec["$sym"]'
+  [[ $_sh_vfl == -A ]] && assoc=1 ||
+  [[ $_sh_vfl == -a ]] || say.err "Not an array ${sym@Q}" || return
+  local -n value=$sym'["$key"]' input=$sym
+  local key{,s} output
+  printf -v output 'declare -gA %s=(\n' "$sym"
+  if [[ ${sym[*]:+set} ]]; then
+    keys=( "${!input[@]}" )
+    # FIXME: sort is for dictionary (assoc arrays)
+    ! ((assoc)) || :sort-array keys
+    for key in "${keys[@]}"; do
+      : "${value@Q}"
+      : "${_//'\n'/$'\n'}"
+      ((assoc)) &&
+        output+="  [\"$key\"]=${_:?}"$'\n' ||
+        output+="  [$key]=${_:?}"$'\n'
+    done
+  fi
+  output+=')'
+  printf '%s\n' "$output"
+}
+:dump-pretty-globals() {
+  local sym
+  local -n _sh_vfl='us_shell_tspec["$sym"]'
+  for sym; do
+    User-Script.Shell.variable-type-cache "$sym" &&
+    case "$_sh_vfl" in
+    ( -[Aa] ) :dump-pretty-global-array "$sym" ;;
+    ( * ) failerr "TODO: dump pretty ${sym@Q}" || return
+    esac || failerr "E$? making pretty dump for ${sym@Q}" || return
+  done
+}
+
 ..Namespace.map-to-ns1() { .map-to-ns1 "$@"; }
 ..Operating-System.path-append() { .path-append "$@"; }
-User-Script.Operating-System.path-append() { .path-append "$@"; }
+
+# User-Script.Operating-System.path-append() { .path-append "$@"; }
+sh_fun User-Script.Operating-System.path-append ||
 User-Script.Operating-System.path-append() { append_path "$@"; }
+
 ..String.join-array() { .join-array "$@"; }
 ..Shell.dump-globals() { .dump-globals "$@"; }
+
+sh_fun User-Conf.Cache.load-data ||
 User-Conf.Cache.load-data() { .load-file "$@"; }
 
 if [[ ${0##*/} = common-dsl.bash ]]; then
