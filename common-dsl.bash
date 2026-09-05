@@ -16,6 +16,12 @@ fi
   ! (($#)) || "$@"
 }
 
+:ignore() { "$@" || :; }
+:pass() { return; }
+:failerr() { failerr "$@"; }
+#:path-append() { User-Script.Operating-System.path-append "$@"; }
+:path-append() { path_append "$@"; }
+
 :argv-err() {
 : about 'Output helper for unset/undefined argument position expressions'
 : param '~ <Position> <Label> <"expected "> <"at position "> ...'
@@ -255,6 +261,28 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
   done
 }
 
+:globstrip-charsright() {
+: param '~ <String-name> [<Match-expression>] ...'
+: input "${1:?$(:argv-err 1 'String name')}"
+  local -n _us_gs_cr_str=${1:?}
+: input "${_us_gs_cr_str:?$(:unset-err $1 'String value')}"
+  local _us_gs_cr_prefc=${2:-"[ ]"}
+
+  while :globmatch "*$_us_gs_cr_prefc" _us_gs_cr_str
+  do
+    #shellcheck disable=SC2295  # Match expansion from var is the idea here
+    _us_gs_cr_str="${_us_gs_cr_str%$_us_gs_cr_prefc}"
+    [[ "$_us_gs_cr_str" ]] || break
+  done
+}
+
+..Namespace.map-to-ns1() { .map-to-ns1 "$@"; }
+..Operating-System.path-append() { .path-append "$@"; }
+User-Script.Operating-System.path-append() { .path-append "$@"; }
+User-Script.Operating-System.path-append() { append_path "$@"; }
+..String.join-array() { .join-array "$@"; }
+..Shell.dump-globals() { .dump-globals "$@"; }
+User-Conf.Cache.load-data() { .load-file "$@"; }
 
 if [[ ${0##*/} = common-dsl.bash ]]; then
 

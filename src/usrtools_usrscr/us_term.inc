@@ -251,7 +251,7 @@ WRITE \033(B rmacs'
   for var in "${!us_term_capvar[@]}"
   do
     : "${capname:?$FUNCNAME${*:+ $*}: Capability name for $var}"
-    ..Core.pass-status "$(2>/dev/null tput $capname)" &&
+    :pass "$(2>/dev/null tput $capname)" &&
     declare -g $var=$_ || {
       failerr "No $capname for terminal $TERM"
       fail=1

@@ -41,8 +41,7 @@ case "${XREDO_TARGET}" in
 ( @test:* )
     script=${XREDO_TARGET#@test:}
     redo-ifchange "$script"
-    ( \builtin . "$script" ) ||
-      failerr "Loading ${script@Q}" || return
+    ( \builtin . "$script" ) || failerr "Loading ${script@Q}" || return
     shellcheck "$script" >&2 &&
     say.v "Load and shellcheck passed for ${script@Q}"
   ;;
@@ -59,10 +58,9 @@ case "${XREDO_TARGET}" in
     redo-ifchange .build-select.sh &&
     redo-ifchange "$src" &&
     mkdir -p "${XREDO_TARGET%/*}" &&
-    \builtin . src/usrtools_usrscr/us_pp.inc &&
-    cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static} &&
-    \builtin . src/usrtools_usrscr/us_fmt_inc.inc &&
-    .run "$src" > "$BUILD_TARGET_TMP"
+    \builtin . ./init-pp.sh >&2 &&
+    .run "$src" .match-line > "$BUILD_TARGET_TMP" ||
+      failerr "Building ns1 for ${src@Q}"
   ;;
 
 

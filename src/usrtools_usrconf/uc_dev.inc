@@ -6,7 +6,7 @@
 Dev() {
 : tag dev
 }
-._hooks() { :- : -A : ; }
+._hooks() { : -A : ; }
 ._hooks:global() {
 # XXX: example layout for data module with hashtables sequence in cache
 : env "${US_DEV_CACHE:=${CACHE_DIR:-.local/cache}}"
@@ -15,12 +15,12 @@ Dev() {
 : env "${US_DEV_STATE_MAPSPEC:=uc_dev_{map{0..3\}\}}"
   declare -ga us_dev_state_assocs
 : env "${UC_DEV_PATHS:=${UC_DEV_PATHS:-.}}"
-  append_lookup "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
+  User-Script.Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
 }
 ._hooks:load() {
   \builtin read -ra us_dev_state_assocs < <(
     \builtin . <(echo echo ${US_DEV_STATE_MAPSPEC:?}))
-  cache_loadmaps "${US_DEV_STATE:?}" "${us_dev_state_assocs[@]:?}"
+  ..Cache.load-maps "${US_DEV_STATE:?}" "${us_dev_state_assocs[@]:?}"
 }
 
 .scan() {
@@ -55,7 +55,7 @@ Dev() {
       echo "Scanning ${path} for tags..."
       \builtin command grep "${args[@]}" "${path}" || true
     else
-      _ failerr "Warning: ${path} is not a directory (ignored)"
+      say.err "Warning: ${path} is not a directory (ignored)"
     fi
   done
 }

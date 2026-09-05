@@ -1,3 +1,0 @@
-Loader.Meta() {
-: type group
-}

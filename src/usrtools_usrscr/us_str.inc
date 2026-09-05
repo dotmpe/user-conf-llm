@@ -255,7 +255,7 @@ String() {
 : input "${2:?$(:argv-err 2 'Length')}"
 : input "${3:?$(:argv-err 3 'Command line')}"
 : completion 'complete -F _command'
-  ..Core.pass-status "$("${@:3}")" &&
+  :pass "$("${@:3}")" &&
   .line-slice "${@:1:2}" <<< "$_"
 }
 

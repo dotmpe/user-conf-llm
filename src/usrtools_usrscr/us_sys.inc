@@ -85,7 +85,7 @@ System() {
   local outname=${1} offset
   [[ ${__sys_read_call_arr[*]:+set} ]] &&
   offset=${#__sys_read_call_arr[@]} || offset=0
-  ..Core.pass-status "$("${@:2}")" || return ${_E_fail:-$?}
+  :pass "$("${@:2}")" || return ${_E_fail:-$?}
   test -n "$_" || return ${_E_nz:-9}
   <<< "$_" mapfile -O ${offset} ${mapfile_f:--t} ${outname}
 }
@@ -98,7 +98,7 @@ System() {
 : input "${3:?$(:argv-err 3 'Command line expected')}"
   local -n _ef95aea5_arr=${1}
   local _ef95aea5_sep=${2} _ef95aea5_{key,val}
-  ..Core.pass-status "$("${@:3}")" &&
+  :pass "$("${@:3}")" &&
   test -n "$_" || return 0
   while read -r line
   do

@@ -14,8 +14,8 @@ Loader() {
   : "${UC_LOADER_DIR:=$PWD/src}" ||
   : "${UC_LOADER_DIR:=${C_INC:?}}"
   : "${UC_INC_PATH:=${UC_INC_DIR:?}}"
-  append_lookup "$UC_INC_DIR" "$UC_LOADER_DIR" UC_INC_PATH
-  [[ ! -d $PWD/src ]] || append_lookup "$PWD/src" UC_INC_PATH
+  :path-append "$UC_INC_DIR" "$UC_LOADER_DIR" UC_INC_PATH
+  [[ ! -d $PWD/src ]] || :path-append "$PWD/src" UC_INC_PATH
 }
 
 .expand-source() {

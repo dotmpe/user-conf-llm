@@ -44,8 +44,7 @@ Operating-System() {
   local -n _PATH=$_PATHNAME
   #: input "${_PATH?$FUNCNAME: Lookup variable ${_PATHNAME@Q} value, $ENV_CTX}"
   local _arg
-  for _arg in "${@:1: $#-1}"
-  do
+  for _arg in "${@:1: $#-1}"; do
     : input "${_arg:?$FUNCNAME: Value for lookup $_PATHNAME, $ENV_CTX:}"
     case ":${_PATH:-:}:" in
       ( *:"${_arg}":*) ((${assert:-0})) || return 1
@@ -74,10 +73,9 @@ Operating-System() {
 
 .path-find() {
 : param '<Lookup> <Path> <Dest> ...'
-  (($#>=3)) || return ${_E_MA:-194}
-: input "${1:?$FUNCNAME: Lookup var}"
-: input "${2:?$FUNCNAME: Path value}"
-: input "${3:?$FUNCNAME: Dest var}"
+: input "${1?$(:argv-err 1 'Lookup var')}"
+: input "${2?$(:argv-err 2 'Path value')}"
+: input "${3?$(:argv-err 3 'Dest var')}"
 : ouput '<Lookup>_arr'
 : tag util
   local -n _us_os_pf_lookup=${1} _us_os_pf_dest=${3} _us_os_pf_larr=${1}_arr
@@ -99,7 +97,7 @@ Operating-System() {
 }
 
 .realpath() {
-: input "${1:?$FUNCNAME: Path var}"
+: input "${1?$(:argv-err 1 'Path var')}"
 : tag util
 : completion 'complete -A directory -A file'
   local -n _realpath_ref=${1}
@@ -135,18 +133,24 @@ Operating-System() {
 }
 
 .script-find() {
-: param ' ~ <Colon-path-var> <Dest-var> <Basename> [<Exts...>]'
-: input "${1?$FUNCNAME${*:+ $*}: Lookup path}"
-: input "${2:?$FUNCNAME${*:+ $*}: Destination varname}"
-: input "${3:?$FUNCNAME${*:+ $*}: Basename}"
+: param '~ <Colon-path-var> <Dest-var> <Basename> [<Exts...>]'
+: input "${1?$(:argv-err 1 'Lookup path')}"
+: input "${2?$(:argv-err 2 'Destination varname')}"
+: input "${3?$(:argv-err 3 'Basename')}"
 : tag util
-  local -I US_SCR_PATH
-  : "${US_SCR_PATH:=SCRIPTPATH}"
+  [[ ${1:+set} ]] || {
+    local -I US_SCR_PATH
+    : "${US_SCR_PATH:=SCRIPTPATH}"
+  }
+  [[ ${4:+set} ]] || {
+    local -I US_SCR_EXT
+    : "${US_SCR_EXT:=.group.bash .bash}"
+  }
   local -n _32591e26_pathvar2=${1:-$US_SCR_PATH}
   local -n _32591e26_src3=${2}
   [[ $# -lt 4 ]] &&  {
     # No name extension tests needed, can use command -v / which directly
-    ..Core.pass-status "$(PATH=${_32591e26_pathvar2} command -v "$3")" &&
+    :pass "$(PATH=${_32591e26_pathvar2} command -v "$3")" &&
     _32591e26_src3=$_ || return ${_E_not_found:-127}
   } || {
     PATH=${_32591e26_pathvar2} .source-find "${2}" "${@:3}" ||
@@ -158,12 +162,12 @@ Operating-System() {
 : param ' ~ <Dest-var> <Basename> <Exts...>'
 : tag util
 : completion 'complete -A variable'
-: input "${1?$FUNCNAME: Varname}"
-: input "${2?$FUNCNAME: Basename}"
-: input "${3:?$FUNCNAME: Name extension(s)}"
+: input "${1?$(:argv-err 1 'Varname')}"
+: input "${2?$(:argv-err 2 'Basename')}"
+: input "${3?$(:argv-err 3 'Name extension(s)')}"
   local _32591e26_{src3,ext3}
   local -n _32591e26_path3=${1:?}
-  for _32591e26_ext3 in "${@:3}"
+  for _32591e26_ext3 in "${@:3}";
   do
     _32591e26_src3=$(builtin command -v "${2}${_32591e26_ext3}") || continue
     _32591e26_path3=$_32591e26_src3

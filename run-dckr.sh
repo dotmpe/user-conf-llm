@@ -28,6 +28,7 @@ if [[ ! ${uc_docker_imgconf_from['deb-bookworm:dev']:+set} ]]; then
     --extra \
 'RUN curl -s https://bashunit.com/install.sh | bash -s -- /usr/local/bin
 COPY etc/bash/user-rc.sh /root/.bashrc
+COPY etc/profile.d/usrtools_usrscr_host_profile.sh /etc/profile.d/
 COPY pack/ns1 /usr/share
 WORKDIR /project
 '
@@ -57,11 +58,12 @@ fi
 # FIXME: cache_setmap should update session
 ._hooks:load
 
+.build 'deb-bookworm:dev'
+
 #declare -p uc_docker_imgconf_{from,packages,extra,settings}
 #for img in "${!uc_docker_imgconf_from[@]}"; do
 #  _ docker rmi "${img}"
 #  /usrtools_usrconf/uc_docker/build "$img"
 #done
-.build 'deb-bookworm:dev'
 .start 'deb-bookworm:dev' "$@"
 #

@@ -59,7 +59,7 @@ Shell() {
   local var
   for var
   do
-    ..Core.pass-status "$(declare -p $var)" &&
+    :pass "$(declare -p $var)" &&
     : "${_#"declare -"[aA]" $var="}" &&
     echo -e "$var+=(\n  ${_:1: -1}\n)"
   done | sed -E '
@@ -73,12 +73,13 @@ Shell() {
 : param '~ <Vars...>'
 : completion 'complete -A variable -A arrayvar'
 : input "${*:?$(:argv-err \* 'Variable name(s)')}"
-  local var
-  for var
-  do
-    ..Core.pass-status "$(declare -p $var)" &&
+  local var als
+  for var; do
+    case "$var" in ( *:* ) als=${var#*:} var=${var%:*};; ( * ) als=; esac
+    :pass "$(declare -p $var)" &&
     : "${_#declare -}" &&
     : "${_#-}" &&
+    : "${_%% *} ${als:-$var}=${_#*=}" &&
     echo "declare -g${_}"
   done
 }
@@ -89,7 +90,7 @@ Shell() {
 : input "${2:?$(:argv-err 2 'Array variable name')}"
 : completion 'complete -A arrayvar'
   #shellcheck disable=2162   # read without -r
-  ..Core.pass-status "$(eval "echo $1")" &&
+  :pass "$(eval "echo $1")" &&
   <<< "${_}" read -a ${2:?}
 }
 
@@ -100,7 +101,7 @@ Shell() {
   (($#-1)) &&
   local -n _out=${2:?$(:argv-err 2 'Output name expected')} ||
     local _out
-  ..Core.pass-status "$(typeset -f "$1")" || return
+  :pass "$(typeset -f "$1")" || return
   : "${_#* () }"
   : "${_:4:-2}"
   _out="$_"
@@ -119,7 +120,7 @@ Shell() {
 : param ' ~ <Funcname> ...'
 : completion 'complete -A function'
 : input "${1:?$(:argv-err 1 'Function name')}"
-  ..Core.pass-status "$(declare -F -- "${_}")"
+  :pass "$(declare -F -- "${_}")"
 }
 
 .maptabvars-defaults() {
@@ -220,7 +221,7 @@ Shell() {
       local als stat
       for als
       do
-        ..Core.pass-status "$(type "${als}")" &&
+        :pass "$(type "${als}")" &&
         : "${_#"$als is aliased to \`"}" &&
         : "${_%\'}" &&
         echo "$_" || stat=$?
@@ -272,7 +273,7 @@ Shell() {
 : input "${1:?$(:argv-err 1 'Function name')}"
 : completion 'complete -A function'
   local src
-  ..Core.pass-status "$(declare -F "${1}")" &&
+  :pass "$(declare -F "${1}")" &&
   read -r _ _ src <<< "${_}" &&
   . "${src:?}"
 }
@@ -299,7 +300,7 @@ Shell() {
   for sym
   do
     if [[ ! ${_sh_vfl:+set} ]]; then
-      ..Core.pass-status "$(2>/dev/null declare -p "${sym}")" ||
+      :pass "$(2>/dev/null declare -p "${sym}")" ||
         failerr "E$? getting ${sym@Q} typeset" || return
       : "${_:8}"
       : "${_%% *}"

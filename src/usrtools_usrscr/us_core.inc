@@ -14,9 +14,7 @@ Core() {
 : nameals '.not-status'    _NOT  not-stat :not
 }
 
-._hooks() {
-: -A
-}
+._hooks() { : -A : ; }
 ._hooks:global() {
 : env "${_E_fail:=1}" 'Generic failure, catch-all for "fail"'
 : env "${_E_bad:=2}"  'Usage error, same E:BSD:64, or E:MA + E:GAE'

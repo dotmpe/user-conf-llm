@@ -24,7 +24,7 @@ to reprocess data. While us_pp_line can hold one line of preprocessed data,
 multiple lines of data must be pushed back onto the source stack as a block, so
 that an actual line can be re-read from it. '
 }
-._hooks() { :- : -A : ; }
+._hooks() { : -A : ; }
 ._hooks:global() {
 : env "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
 : env "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
@@ -40,9 +40,50 @@ that an actual line can be re-read from it. '
 : env "${US_PP_RUN_SPEC:=us_pp_{input:._source,reader:cb,matcher:cb\}}"
   \builtin read -ra us_pp_run_settings < <(
     \builtin . <(echo echo ${US_PP_RUN_SPEC:?}))
-  declare -p us_pp_run_settings
 
   cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
+}
+
+._block-append() {
+  us_pp_block+=${us_pp_line}$'\n'
+}
+
+._concat-source () {
+  local new_fd
+  ._open-filesource "$1" &&
+  # NOTE read is at end of stack, so concat is actually unshift
+  us_pp_input_stack=( "$new_fd" "${us_pp_input_stack[@]}" )
+  us_pp_input_lnr=( 0 "${us_pp_input_lnr[@]}" )
+}
+
+._open-filesource () {
+  exec {new_fd}<"$1" ||
+    :failerr "E$? opening FD for file ${1@Q}" || return
+  us_pp_sources+=( "$1" )
+  :_debug "Reading from ${1@Q} (FD #${new_fd})"
+}
+
+._read-line() {
+  (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
+    # TODO: pass var?
+  ._shift-line || return
+  ((${2:-0})) || ((us_pp_srclnr+=1))
+  # XXX: optional: strip trailing CR, count lines, etc.
+  return 0
+}
+
+._shift-line() {
+  if ! IFS= read -r us_pp_line <&$us_pp_fd; then
+    # close after EOF on current FD
+    exec {us_pp_fd}<&- || {
+      us_pp_fail_stat=$?
+      us_pp_fail_fd=$us_pp_fd
+      :failerr "closing FD $us_pp_fd" "$us_pp_fail_stat" || return
+    }
+    unset us_pp_fd
+    (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
+    return ${_E_next:?}
+  fi
 }
 
 ._source() {
@@ -60,79 +101,13 @@ that an actual line can be re-read from it. '
   us_pp_input_lnr=( 0 )
 }
 
-._concat-source () {
-  local new_fd
-  ._open-filesource "$1" &&
-  # NOTE read is at end of stack, so concat is actually unshift
-  us_pp_input_stack=( "$new_fd" "${us_pp_input_stack[@]}" )
-  us_pp_input_lnr=( 0 "${us_pp_input_lnr[@]}" )
-}
-
-._open-filesource () {
-  exec {new_fd}<"$1" ||
-    failerr "E$? opening FD for file ${1@Q}" || return
-  us_pp_sources+=( "$1" )
-  :_debug "Reading from ${1@Q} (FD #${new_fd})"
-}
-
-._read-line() {
-  (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
-    # TODO: pass var?
-  ._shift-line || return
-  ((${2:-0})) || ((us_pp_srclnr+=1))
-  # XXX: optional: strip trailing CR, count lines, etc.
-  return 0
-}
-
-._read-localname() {
-  us_pp_line=${_ns0_pre}${us_pp_line}
-  _ns0_nameref=${us_pp_line%%"() {"*}
-  us_pp_name_map["${_ns0_nameref}()"]=${us_pp_input}:${us_pp_srclnr-}
-}
-
-._read-meta() {
-  local _{meta,value} _metaline=${us_pp_line}
-  :globstrip-charsleft _metaline $'[:\ \t]'
-  read -r _{meta,value} <<< "${_metaline}"
-  local -n _dest="us_pp_meta_static[\"$_ns0_nameref : ${_meta:?}\"]"
-  [[ ! ${_value:+set} ]] || _dest=${_dest:+"$_dest"$'\n'}${_value:?}
-}
-
-._read-modulename() {
-  us_pp_line=${_ns0_pre}.${us_pp_line}
-  _ns0_nameref=${us_pp_line%%"() {"*}
-  say.v "Found module ${_ns0_nameref}"
-  _ns0_pre=${_ns0_nameref}
-  us_pp_name_map["${_ns0_pre}"]=${us_pp_input}:${us_pp_srclnr-}
-}
-
-._read-specialname() {
-  us_pp_line=${_ns0_pre}${us_pp_line}
-  _ns0_nameref=${us_pp_line%%"() {"*}
-  us_pp_name_map["${_ns0_nameref}()"]=${us_pp_input}:${us_pp_srclnr-}
-}
-
-._shift-line() {
-  if ! IFS= read -r us_pp_line <&$us_pp_fd; then
-    # close after EOF on current FD
-    exec {us_pp_fd}<&- || {
-      us_pp_fail_stat=$?
-      us_pp_fail_fd=$us_pp_fd
-      failerr "closing FD $us_pp_fd" "$us_pp_fail_stat" || return
-    }
-    unset us_pp_fd
-    (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
-    return ${_E_next:?}
-  fi
-}
-
 ._unshift-lineblock() {
   local new_fd
   local -n _str=${1}
   [[ ${_str:+set} ]] ||
-    failerr "No block to unshift for ${FUNCNAME[1]}: ${1@Q}" || return
+    :failerr "No block to unshift for ${FUNCNAME[1]}: ${1@Q}" || return
   exec {new_fd}<<<"$_str" ||
-    failerr "E$? opening FD for string ${1}" || return
+    :failerr "E$? opening FD for string ${1}" || return
   us_pp_input_stack+=( "$new_fd" )
   us_pp_input_lnr+=( 0 )
   us_pp_sources+=( "<string:$new_fd>" )
@@ -153,12 +128,12 @@ that an actual line can be re-read from it. '
 : input "${1:?$(:argv-err 1 "Source path")}"
 
   #:read-setting US_PP_RUN_SPEC "$@"
-  local us_pp_plug=${2:-us_fmt_inc}
+  local us_pp_matcher=${2:-User-Script.Format.Include.match-line}
   #\builtin . <(sh_funbody ._run-common+startup)
   inline ___=._run-common+startup; inline-fun
   ._source "$1" || return
 
-  while true; do
+  while :; do
 
     if [[ -z ${us_pp_line:+set} || ${us_pp_retry:-0} -eq 1 ]]; then
       ._read-line us_pp_line ${us_pp_line:+1} || {
@@ -171,11 +146,12 @@ that an actual line can be re-read from it. '
       ((${us_pp_retry:-0})) && us_pp_retry=0 || ((us_pp_lnr+=1))
     fi
 
-    #"${us_pp_core}"_match_line us_pp_line && handled=1 || {
-    ._match-line us_pp_line us_pp_line && handled=1 || {
+    "$us_pp_matcher" us_pp_line && handled=1 || {
       local st=$?
       (( st == _E_break    )) && break
+      #shellcheck disable=2154
       (( st == _E_continue )) && continue  # ASSERT !us_pp_line should be consumed
+      #shellcheck disable=2154
       (( st == _E_retry    )) && { us_pp_retry=1; continue; }
       (( st == _E_next     )) && handled=0 || {
         : "$us_pp_lnr"; (( _ == us_pp_srclnr )) || : "$_:$us_pp_srclnr"
@@ -184,13 +160,17 @@ that an actual line can be re-read from it. '
     }
 
     if (( !handled )); then
-      ._emit-line
-      #"$us_pp_core"_emit us_pp_line
+      if [[ ${us_pp_block:+set} ]]; then
+        printf '%s' "$us_pp_block"
+        us_pp_block=
+      else
+        printf '%s\n' "$us_pp_line"
+        us_pp_line=
+      fi
     fi
-    us_pp_line=
   done
 
-  if (( ${#us_pp_input_stack[*]} >= 0 )); then
+  if (( ${#us_pp_input_stack[*]} > 0 )); then
     say.err "Closing ${#us_pp_input_stack[*]} remaining unread inputs"
     local fd
     for fd in "${us_pp_input_stack[@]}"; do
@@ -207,15 +187,8 @@ that an actual line can be re-read from it. '
 
   # TODO: manage state per source
   #cache_dumpmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]}"
-  >| "${US_PP_STATE:?}" sh_dumpglobal us_pp_{name_map,meta_static}
-}
-
-._emit-line() {
-  printf.line "${us_pp_line}"
-}
-
-._block-append() {
-  us_pp_block+=${us_pp_line}$'\n'
+  >| "${US_PP_STATE:?}" \
+  ..Shell.dump-globals us_pp_{name_map,meta_static}
 }
 
 ._run-common+startup() {
@@ -227,7 +200,7 @@ that an actual line can be re-read from it. '
   local us_pp_lnr=0
 
   [[ ${us_pp_lang-} ]] ||
-    _ failerr "Language expected for prefilter and/or comment + shebang/modeline formats (ignored)"
+    say.err "Language expected for prefilter and/or comment + shebang/modeline formats (ignored)"
   : "${us_pp_lang:=}"
 
   # FIXME: give global access to accumulated sources, for cache invalidation etc.
@@ -242,10 +215,10 @@ that an actual line can be re-read from it. '
   #  us_pp_outline_level=0
   #fi
 
-  # TODO: plugin namespace translator
-  local _ns0_{pre,namref}
-  say.err "Args $*"
+  local _ns0_{pre,nameref}
+  # TODO: map other way
   _ns0_pre=User-Script
+  .map-to-ns1 _ns{0,1}_pre
   _ns0_nameref=${_ns0_pre}
 }
 

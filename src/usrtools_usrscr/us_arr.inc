@@ -305,7 +305,7 @@ Array() {
   local -n __arr_in=${1}
   local -n __arr_out=${2:-$1}
   IFS=$'\n'
-  ..Core.pass-status "$(<<<"${__arr_in[*]}" sort)" && mapfile -t ${!__arr_out} <<< "$_"
+  :pass "$(<<<"${__arr_in[*]}" sort)" && mapfile -t ${!__arr_out} <<< "$_"
   IFS=$' \t\n'
 }
 

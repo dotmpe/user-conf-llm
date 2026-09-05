@@ -5,11 +5,14 @@
 # Distributed under terms of the MIT license.
 Cache() {
 : type group
+  #_als=(
+  #  [cache_loadmaps]=.load-maps
+  #)
 }
-
-._hooks() { _: : -A : ; }
+._hooks() { :- : -A : ; }
 ._hooks:global() {
-  : "${uc_cache_list:=$METADIR/cache/cache.data.bash}"
+: env "${UC_CACHE_DIR:=${CACHE_DIR:-.local/cache}}"
+: env "${UC_CACHE_STATE:=${UC_CACHE_DIR:?}/uc_cache.data.bash}"
 }
 ._hooks:load() {
   ! [[ ${UCACHE:+set} ]] || {
@@ -31,7 +34,7 @@ Cache() {
   local -n __namerefs=${target}_namerefs
   local -n __names=${target}_names
   local -n __srcsyms=${target}_srcsyms
-  ${uc_obj_pre:?}declare "${@:2}" &&
+  ..Object.declare "${@:2}" &&
   .set-source "$datafile" "${__srcsyms[@]}"
 
   declare -p ${!__srcsyms}
@@ -52,7 +55,7 @@ Cache() {
 : input "${1?$(:argv-err 1 'Cache file')}"
 : input "${2?$(:argv-err 2 'Map key(s)')}"
   local __uc_cache_file=${1:?} keys
-  . <(echo "keys=($(printf ' "%s"' "${@:2}") )")
+  \builtin . <(echo "keys=($(printf ' "%s"' "${@:2}") )")
   { printf 'unset'; printf ' "%s"' "${keys[@]}" ; printf '\n'
   } >> "${__uc_cache_file}"
 }
@@ -64,10 +67,10 @@ Cache() {
   (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Data file')}"
   [[ -s "${1}" ]] &&
-  . "${1}" && {
+  \builtin . "${1}" && {
     ! ((VERBOSE)) || {
       # Print summary of loaded bytes/items
-      if_ok "$(du -hs "${1}")" &&
+      :pass "$(du -hs "${1}")" &&
       : "${_%%$'\t'*}" &&
       >&2 echo "Cache loaded ($_ bytes)" || : "???"
     }
@@ -80,40 +83,35 @@ Cache() {
 : param '~ <Data-file> <Map-exports...>'
 : about 'Helper to retrieve map arrays from Shell cache file'
 : tag cache
-  (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Shell script cache file')}"
 : input "${2?$(:argv-err 2 'Associative array name(s)')}"
   declare -gA "${@:2}" ||
-    failerr "Cannot declare global maps ${*@Q}" || return
+    :failerr "Cannot declare global maps ${*@Q}" || return
   [[ -s "${1}" ]] &&
-  . "${1}" && {
+  \builtin . "${1}" && {
     ! ((VERBOSE)) || {
       # Print summary of loaded bytes/items
-      if_ok "$(du -hs "${1}")" &&
+      :pass "$(du -hs "${1}")" &&
       : "${_%%$'\t'*}" &&
-      >&2 echo "Cache loaded ($_ bytes) for ${*:2}" || : "???"
+      say.info "Cache loaded ($_ bytes) for ${*:2}" || :
       local -n _ref
-      for _ref in "${@:2}"
-      do
+      for _ref in "${@:2}"; do
         [[ ! "${_ref[*]:+set}" ]] ||
-          >&2 echo "Found ${#_ref[@]} ${!_ref} items in cache"
+          say.v "Found ${#_ref[@]} ${!_ref} items in cache"
       done
     }
-  } ||
-    ! ((VERBOSE)) ||
-      >&2 echo "Missing or empty $1 cache (E$?, ignored)"
+  } || say.err "Missing or empty $1 cache (E$?, ignored)"
 }
 
 .rekey-maps() {
 : param ' ~ <Oldcache> <Newcache> <Prefix> <Oldkey> <NewKey> <Fields>'
   (($#)) || return ${_E_MA:?}
   local field
-  [[ ! -s "$2" ]] || . "$2" || return
-  for field in "${@:6}"
-  do
+  [[ ! -s "$2" ]] || \builtin . "$2" || return
+  for field in "${@:6}"; do
     local -n _old="${3}_${field}[\"${4}\"]"
     [[ ${_old+set} ]] ||
-      :failp "no data for $3 $4 $field" || continue
+      :failerr "no data for $3 $4 $field" || continue
     local -n _new="${3}_${field}[\"${5}\"]"
     [[ ${_old} = "${_new-}" ]] ||
     .update-map "$2" "${!_new}" "${_old}" || return
@@ -146,24 +144,22 @@ Cache() {
 .set-source() {
 : about ' ~ <File> <Keynames...>'
 : tag cache file
-  (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Data file path')}"
 : input "${2?$(:argv-err 2 'Data symbol(s)')}"
   local file=${1} sym uc_cache_{fields,source,name{ref,key}s,srcsyms}
-  ${uc_obj_pre:?}declare uc_cache \$sym source &&
-  . <(echo "local -n ${uc_cache_namerefs[*]:?}") &&
+  ..Object.declare uc_cache \$sym source &&
+  \builtin . <(echo "local -n ${uc_cache_namerefs[*]:?}") &&
   to-v declare -p uc_cache_{fields,source,name{ref,key}s,srcsyms} &&
-  .load-maps "$uc_cache_list" "${uc_cache_srcsyms[@]:?}" || return
+  .load-maps "$UC_CACHE_STATE" "${uc_cache_srcsyms[@]:?}" || return
   shift
   for sym; do
-    .set-map "$uc_cache_list" "${!__source:?}" "$file"
+    .set-map "$UC_CACHE_STATE" "${!__source:?}" "$file"
   done
 }
 
 .update-index() {
 : param ' ~ <File> <Key-spec> <Data> ...'
 : tag cache data
-  (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Cache file')}"
 : input "${2?$(:argv-err 2 'Index offset integer')}"
 : input "${3?$(:argv-err 3 'Data')}"
@@ -177,7 +173,7 @@ Cache() {
 
   # expand any variable reference in idx part
   : "${idxspec//\"/\\\"}"
-  if_ok "$(. <(echo "echo \"${_}\""))" &&
+  :pass "$(\builtin . <(echo "echo \"${_}\""))" &&
   idx=${_} &&
   echo "${2%\[*}[${idx}]=${3@Q}" >> "${1}"
 }
@@ -186,7 +182,6 @@ Cache() {
 : param ' ~ <File> <Keyname> <Data> ...'
 : about 'Helper to generate correct cache key name as quoting is a bit of a pain'
 : extended 'To update env as well, see .set-map'
-  (($#)) || return ${_E_MA:?}
 : tag cache data
 : input "${1?$(:argv-err 1 'Cache file')}"
 : input "${2?$(:argv-err 2 'Map key')}"
@@ -204,9 +199,9 @@ Cache() {
 
   # expand any variable reference in key part
   : "${keyspec//\"/\\\"}"
-  if_ok "$(. <(echo "echo \"${_}\""))" &&
+  :pass "$(\builtin . <(echo "echo \"${_}\""))" &&
   key=${_} &&
   echo "${2%\[*}[\$${key@Q}]=${3@Q}" >> "${1}"
 }
 
-# Id: uc_cache                          vim:set ft=bash sw=2 sts=2 et:
+# Id: uc_cache                                   vim:set ft=bash sw=2 sts=2 et:

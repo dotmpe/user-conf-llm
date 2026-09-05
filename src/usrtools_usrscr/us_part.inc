@@ -43,8 +43,8 @@ For usage refer to the individual functions.
 ._hooks() { : -A : ; }
 ._hooks:global() {
 : env "${SCRIPTPATH:=}"
-: env "${US_PARTOPTS:=simple:p=0 init=0 renit:I=0 reload:L=0 export:X=0 alias:S=0 dump=0}"
-: env "${US_PARTOPTS:=simple:p=0 init=0 reInit=0 reLoad=0 eXport=0 aliaS=0 dump=0}"
+# : env "${US_PARTOPTS:=simple:p=0 init=0 renit:I=0 reload:L=0 export:X=0 alias:S=0 dump=0}"
+# : env "${US_PARTOPTS:=simple:p=0 init=0 reInit=0 reLoad=0 eXport=0 aliaS=0 dump=0}"
 }
 
 .list-parts() {
@@ -63,6 +63,7 @@ For usage refer to the individual functions.
 : param '~ ... --<longopt> | -<f>'
 : param '~ ... -+<longopt> | +<f>'
 : param '~ ... --hooks:<names,>'
+: env DEBUG DIAG
 : man '~ is an rudimentary argument parser followed by a load/cache/option loop
 over source part names.
 
@@ -81,11 +82,163 @@ User-Script.OS.source-once
 User-Script.Scripting.inline-callbacks  # combine ssc/als and funbody inline
 '
 : alias us-part
-  local simple=0 init=0 reinit=0 reload=0 export=0 alias=0 dump=0
-  hooks pathvar
-
-  pathvar=SCRIPTPATH
+  local simple=0 init=0 reinit=0 reload=0 export=0 alias=0 dump=0 hooks pathvar
+  local -a load_scripts
   inline-fun +_parseopts
+  local name{global,tag,ref,word} partname funname
+  local -n _namesrc='_os_script_path["$nameref"]'
+  [[ ${_os_script_path[*]:+set} ]] || declare -gA _os_script_path
+  while (($#)); do
+    nameref=${1?$(:argv-err 1 'Part name')}
+    nameword=${nameref//[^A-Za-z0-9_]/_}
+    nametag=
+    local -n \
+      partpref=${nameword}_pre \
+      partgrp=${nameword}_grp \
+      partvar=${nameword}_var \
+      partfun=${nameword}_fun \
+      partssc=${nameword}_ssc \
+      partals=${nameword}_als \
+      parthooks=${nameword}_hooks
+    nameglobal=${partpref:-${nameref}}
+    ! ((reinit || reload)) && >/dev/null 2>&1 declare -F ${nameref}@part && {
+      ${nameref}@part
+    } || {
+      ((init && !reload)) || {
+        [[ ${_namesrc:+set} ]] ||
+          US_SCR_PATH=$pathvar \
+          .resolve-name "${nameref}" "${!_namesrc}" nametag ||
+            :failerr "E$? while resolving $nameref name" || return
+        ! ((reload )) && {
+          ..OS.source-once "${_namesrc}" ||
+            :failerr "E$? while loading $nameref source" || return
+        } ||
+          \builtin . "${_namesrc}" ||
+            :failerr "E$? while resolving $nameref part source" || return
+      }
+      ! ((DEBUG)) || {
+        [[ ${partpref:+set} || ${partgrp[*]:+set} || ${partvar[*]:+set} ||
+            ${partfun[*]:+set} || ${partssc[*]:+set} || ${partals[*]:+set} ||
+            ${parthooks[*]:+set} \
+        ]] ||
+          :failerr "Part ${nameref} appears to be empty (ignored)"
+      }
+
+      # There are cases where prefix is not needed
+      if [[ ${partpref:+set} ]]; then
+        [[ ${partpref: -1:1} == . ]] || partpref=$partpref.
+      fi
+
+      ! ((reload || reinit)) &&
+      >/dev/null 2>&1 declare -F ${nameref}@part ||
+        eval "${nameref}@part () {
+: prefix ${nameglobal}
+  ${nametag:+: tag ${nametag}
+}  $(for k in ${nameword}_{pre,grp,var,fun,ssc,als,hooks}
+      do test -n "$(2>/dev/null declare -p $k)" || continue
+        : "${_:9}"
+        : "${_#-}"
+        echo "declare -g${_}"
+      done)
+}"
+    }
+
+    if ! ((simple)) && [[ ${partgrp:+set} ]]; then
+      set -- "${partgrp[@]}" "$@"
+      continue
+    fi
+
+    if [[ ${hooks:+set} && ${parthooks[*]:+set} ]]; then
+      local hook
+      for hook in ${hooks}; do
+        test -n "${parthooks["$hook"]-}" || continue
+        if [[ $hook = load ]]; then load_scripts+=( "$_" )
+        else
+          \builtin . <(printf '%s\n' "$_") ||
+            :failerr "E$? during $nameref hook ${hook@Q} (ignored)"
+        fi
+      done
+    fi
+
+    local -a funex varex
+    [[ ! ${partfun:+set} ]] || for partname in "${partfun[@]}"; do
+        : "${partname:?Name for $nameref partssc}"
+        [[ ${partname:0:1} == . ]] && : "${partpref-}${partname:1}" || : "${partname}"
+        funex+=( "${_}" )
+      done
+    [[ ! ${partvar:+set} ]] || for partname in "${partvar[@]}"; do
+        varex+=( "${partname:?Name for $nameref partvar}" )
+      done
+    [[ ! ${partssc[*]:+set} ]] || for partname in "${!partssc[@]}"; do
+        : "${partname:?Name for $nameref partssc}"
+        # Ignore all special aliases here
+        [[ ${partname:0:1} == [A-Za-z_.] ]] || continue
+        [[ ${partname:0:1} == . ]] && : "${partpref-}${partname:1}" || : "${partname}"
+        funname=${_}
+        ! ((reinit)) &&
+        >/dev/null 2>&1 declare -F ${funname} || {
+          [[ ${partssc["$partname"]:0:1} = . ]] &&
+          : "${partpref-}${partssc["$partname"]:1}" ||
+            : "${partssc["$partname"]}"
+          eval "$funname () { ${_:?}; }"
+        }
+        funex+=( "${funname}" )
+      done
+    ! ((alias)) || for partname in "${!partals[@]}"; do
+        # XXX: (almost) completely the same as ssc for now
+        : "${partname:?Name for $nameref partals}"
+        # Ignore certain special aliases by default
+        [[ ${partname:0:1} == [A-Za-z_.] ]] || continue
+        [[ ${partname:0:1} == . ]] && : "${partpref-}${partname:1}" || : "${partname}"
+        funname=${_}
+        ! ((reinit)) &&
+        >/dev/null 2>&1 declare -F ${funname} || {
+          [[ ${partals["$partname"]:0:1} = . ]] &&
+          : "${partpref-}${partals["$partname"]:1}" ||
+            : "${partals["$partname"]}"
+          eval "$funname () { ${_:?} \"\$@\"; }"
+        }
+        funex+=( "${funname}" )
+      done
+
+    ! ((DEBUG || DIAG)) || {
+      for var in "${varex[@]}"; do
+        :pass "$(2>/dev/null declare -p "${var}")" || [[ ${_:+set} ]] ||
+          :ignore :failerr "Missing variable ${var}"
+      done
+      for fun in "${funex[@]}" "${nameref}@part"; do
+        :pass "$(2>/dev/null declare -F "${fun}")" || [[ ${_:+set} ]] ||
+          :ignore :failerr "Missing function ${fun}"
+      done
+    }
+
+    ((dump)) && {
+      [[ ! ${varex:+set} ]] || :- ..Shell.dump-globals "${varex[@]}"
+      declare -f "${funex[@]}" "${nameref}@part"
+      ! ((export)) || echo "declare -fx ${funex[*]} ${nameref}@part"
+    } ||
+      ! ((export)) || {
+        [[ ! ${varex:+set} ]] ||
+          declare -gx "${varex[@]}"
+        declare -fx "${funex[@]}" "${nameref}@part"
+      }
+
+    [[ ! ${hooks:+set} || ! ${parthooks[*]:+set} ]] || {
+      local hook
+      for hook in ${hooks}; do
+        test -n "${parthooks["$hook-after"]-}" || continue
+        \builtin . <(printf '%s\n' "${_}") ||
+          :failerr "E$? during $nameref after hook ${hook@Q} (ignored)"
+      done
+    }
+
+    unset varex funex
+    shift
+  done
+  if [[ ${load_scripts[*]:+set} ]]; then
+    \builtin . <(printf '%s\n' "${load_scripts[@]}") ||
+      :failerr "E$? during post hooks (ignored)"
+  fi
 }
 
 .part-main+_parseopts() {
@@ -98,21 +251,37 @@ User-Script.Scripting.inline-callbacks  # combine ssc/als and funbody inline
   ;; ( --alias ) alias=1 # Create functions from static script and function name map
   ;; ( --dump ) dump=1 simple=1 hooks=dump # Typeset to out
   ;; ( --path[:=-]* ) # Specificy lookup PATH-var(s)
-    [[ ${1:7} && ${1:7} == *[:,-]* ]] && {
-      : "${1:7}"
-      pathvars=${_//[:,]/ }
-      TODO "TODO: pathvars=$_, 1:7-:${1:7}" || return
-    } ||
-      pathvar=${1:7}
+      pathvar=${1:7} && [[ ${!pathvar:+set} ]] ||
+        :failerr "No value for lookup path ${pathvar}" || return
   ;; ( --hooks[:=]* ) # Run named hook sequences
-    : "${1:8}"
-    hooks=${_//,/ }
+      : "${1:8}"
+      hooks=${_//,/ }
   ;; -* )
-      failerr "Unknown option ${1@Q}" ${_E_nss:-65} || return
+      :failerr "Unknown option ${1@Q}" ${_E_nss:-65} || return
   ;; * ) false
     esac
   do shift
   done
+}
+
+.resolve-name() {
+: param ' ~ <Name> <Dest-Var> <Id-var> <Exts...>'
+: input "${1?$(:argv-err 1 'Name value')}"
+: input "${2?$(:argv-err 2 'Path dest var name')}"
+: input "${3?$(:argv-err 3 'Id dest var name')}"
+
+  ..OS.script-find "" "${2}" "${1}" "${@:4}" || {
+
+    test 127 -eq $? || :failerr "E$_ while loading $1" $_ || return
+
+    local -n _32591e26_tagname=${3}
+    ..String.globreverse-replace - , "${1}" "${3}" &&
+    ..OS.script-find "" "${2}" "${_32591e26_tagname}" "${@:4}" || {
+      test 127 -eq $? ||
+        :failerr "E$_ while loading $1 <$_32591e26_tagname.bash>" $_ || return
+      :failerr "E$_ $FUNCNAME cannot find $1 <$_32591e26_tagname.bash>" 127 || return
+    }
+  }
 }
 
 # Id: us_part                          vim:set ft=bash sw=2 sts=2 et:
