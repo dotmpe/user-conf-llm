@@ -34,7 +34,7 @@ Docker() {
 
   dckrfile_path=${UC_DOCKER_CACHE}/uc_docker_imgconf-${1//[!A-Za-z0-9_]/_}.dockerfile
   [[ -w ${dckrfile_path%/*} ]] ||
-    failerr "Target directory not writable: ${dckrfile_path@Q}" || return
+    :failerr "Target directory not writable: ${dckrfile_path@Q}" || return
 
   # TODO: Parse and handle extension settings
   {
@@ -75,9 +75,9 @@ Docker() {
 
   shift 2 || return ${_E_GAE:?}
   [[ ! ${__imgconf_from:+set} ]] ||
-    failerr "Configuration ${imgconf_key@Q} already exists" || return
+    :failerr "Configuration ${imgconf_key@Q} already exists" || return
   cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_from}" "${imgconf_base}" ||
-    failerr "E$? during save" || return
+    :failerr "E$? during save" || return
   . <(:funbody ._common/argparse)
 }
 
@@ -118,13 +118,13 @@ Docker() {
         fi
       ;;
     ( --extra )
-        [[ ${2:+set} ]] || failerr "Empty argument after ${1@Q}" || return
+        [[ ${2:+set} ]] || :failerr "Empty argument after ${1@Q}" || return
         cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_extra}" "${2}" ||
           return
         shift 2 || return ${_E_GAE:?}
       ;;
     ( * ) false
-  esac || failerr "${1@Q}? Option or argument error" ${_E_GAE:?} || return; done
+  esac || :failerr "${1@Q}? Option or argument error" ${_E_GAE:?} || return; done
 }
 
 ._common/context() {

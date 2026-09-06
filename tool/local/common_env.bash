@@ -26,7 +26,7 @@ declare -ga uc_cb_exit
 :exit() {
   [[ ! ${uc_cb_exit[*]:+set} ]] ||
     \builtin . <(printf.line "${uc_cb_exit[@]}") ||
-      failerr "E$? During :exit cleanup"
+      :failerr "E$? During :exit cleanup"
 }
 
 
@@ -58,8 +58,11 @@ fi
 : env "${_E_retry:=198}"
 
 
-: "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
-: "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
-: "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
+: env "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
+: env "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
+: env "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
+
+
+: env "${C_INC:=$HOME/.local/composure}"
 
 # Id: common_env                          vim:set ft=bash sw=2 sts=2 et:

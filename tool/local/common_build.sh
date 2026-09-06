@@ -2,17 +2,95 @@
 
 # common_build.sh is the home for all target recipes
 
+:uc-diag:forbidden-patterns() {
+  # NOTE: this file and other tools are in tool/local/*, so patterns
+  # themselves must (in general) be kept as config (elsewhere).
+  :pass "$(< etc/diag_forbidden_patterns.bash.lines )" &&
+  . <(printf "forbidden=( %s )" "$_") &&
+  [[ ${forbidden[*]:+set} ]] ||
+    :failerr "No forbidden patterns configured" || return
+
+  # Search (grep) file for certain expressions, warn about match(es)
+  for x in "${forbidden[@]}"; do
+    grep -HPn "^[^#]+$x" "$script" >&2 || continue
+    :failerr "Found forbidden ${x@Q}, see before lines" || return
+  done
+}
+
+:uc-diag:shell-lint-check() {
+  ( \builtin . "$script" ) || :failerr "Loading ${script@Q}" || return
+  \builtin command shellcheck "$script" >&2 &&
+  say.v "Load and shellcheck passed for ${script@Q}"
+}
+
+:uc-diag:unguarded-tooling-invocations() {
+  # FIXME: this does not work right yet; should require \builtin command for
+  # certain toolkit commands (for recognition)
+  # And for source/. (eval is kept in forbidden expressions)
+  # But for other may introduce \reserved or \uc_reserved or similar. And should
+  # know (scan/index) those with us-pp.
+  # Same for some other commands, should require \inline prefix (later).
+  mapfile -t cmds < etc/diag_core_tooling.list &&
+  [[ ${cmds[*]:+set} ]] ||
+    :failerr "No cmds configured" || return
+
+  :pass "$(IFS='|'; echo "${cmds[*]}")" &&
+  grep -HPn "^[^#]+(?<!\\\bbuiltin[ \t])(?<!\\\)\b(${_:?})\b" -- "$script" >&2 ||
+    return 0
+  :failerr "Found unguarded tooling invocation(s), see before lines"
+}
+
+:uc-diag:todo-comments() {
+  TODO "implement comment scan"
+}
+
 :xredo-check-recipe() {
-  script=${XREDO_TARGET#@check:}
+  local diag script
+  : "${XREDO_TARGET#@check:}"
+  IFS=: read -r script diag <<<"${_}"
   redo-ifchange "$script"
+  # TODO: act on and handle $diag setting
   case "$script" in
+
   ( pack/* )
-      ( \builtin . "$script" ) || :failerr "Loading ${script@Q}" || return
-      shellcheck "$script" >&2 &&
-      say.v "Load and shellcheck passed for ${script@Q}"
+      # TODO: rewrite parts so they can be used as recipe target
+      #: "${diag:=@uc-diag:shell-lint-check}"
+      :uc-diag:shell-lint-check
     ;;
+
+  ( *.do | tool/* )
+      :uc-diag:forbidden-patterns &&
+      #:uc-diag:unguarded-tooling-invocations &&
+      : #:uc-diag:todo-comments
+    ;;
+
+  ( src/* | test/* )
+      :uc-diag:forbidden-patterns &&
+      : #:uc-diag:todo-comments
+    ;;
+
   ( * ) :failerr "There is no check action for script ${script@Q}"
   esac
+}
+
+:xredo-check-target() {
+  redo-always
+  local files targets
+  files=(
+    default.do
+    src/*/*.inc
+    test/*.*
+    tool/bash/part/*
+    tool/local/{,exec/}*.*
+  )
+  for file in "${files[@]}"; do
+    # TODO: make some grouping(s) of diag/src sets, not all should always need
+    # to be on. CI would have the most complete set, then the (full) test
+    # branch, but other envs/branches may get fewer diag (or none; ie "dev")
+    # @uc-diag:regression-grep
+    targets+=( "@check:$file" )
+  done
+  redo-ifchange "${targets[@]}"
 }
 
 :xredo-build-target() {
@@ -45,26 +123,16 @@
     fi
   done
 
-  #:dump-global-pretty sources >| ./$VAR/redo_default.bash &&
-  declare -p sources >| ./$VAR/redo_default.bash &&
+  #:dump-globals sources >| ./$VAR/redo_default.bash &&
+  :dump-pretty-globals sources >| ./$VAR/redo_default.bash &&
   redo-stamp <<< "${sources[@]}"
-}
-
-:xredo-diag-target() {
-  redo-always
-  local tools targets
-  tools=( tool/local/{,exec/}*.* )
-  for tool in "${tools[@]}"; do
-    targets+=( "@check:uc_diag_regression_grep:$tool" )
-  done
-  redo-ifchange "${targets[@]}"
 }
 
 :xredo-index-recipe() {
   src=src/${XREDO_TARGET#@index:}
   redo-ifchange "$src" &&
   \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
-  .run "$src" .match-line > /dev/null || failerr "Indexing ${src@Q}"
+  .run "$src" .match-line > /dev/null || :failerr "Indexing ${src@Q}"
 }
 
 :xredo-pack-recipe() {
@@ -74,7 +142,7 @@
   mkdir -p "${XREDO_TARGET%/*}" &&
   \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
   .run "$src" .match-line > "$BUILD_TARGET_TMP" ||
-    failerr "Building ns1 for ${src@Q}"
+    :failerr "Building ns1 for ${src@Q}"
 }
 
 :xredo-pack-target() {

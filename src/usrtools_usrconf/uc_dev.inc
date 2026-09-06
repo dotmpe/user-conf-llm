@@ -15,7 +15,7 @@ Dev() {
 : env "${US_DEV_STATE_MAPSPEC:=uc_dev_{map{0..3\}\}}"
   declare -ga us_dev_state_assocs
 : env "${UC_DEV_PATHS:=${UC_DEV_PATHS:-.}}"
-  User-Script.Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
+# FIXME: User-Script.Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_DEV_PATHS
 }
 ._hooks:load() {
   \builtin read -ra us_dev_state_assocs < <(

@@ -186,7 +186,7 @@ String() {
   fi
 
   [[ ${_us_str_ls_in:+set} ]] ||
-    failerr "$FUNCNAME: Empty input" || return
+    :failerr "$FUNCNAME: Empty input" || return
   : "${_us_str_ls_in}"
   : "${1}${_//$'\n'/$'\n'${1}}"
   : "${_//$'\n'/${2}$'\n'}${2}"
@@ -214,7 +214,7 @@ String() {
   case "${_us_str_varref,,}" in
   ( y|j|true|on|1 ) _us_str_outref=${US_STR_TRUE:-true} ;;
   ( n|f|false|off|0 ) _us_str_outref=${US_STR_FALSE:-false} ;;
-    * ) failerr "Not a mapped boolean value: ${_us_str_varref@Q}"
+    * ) :failerr "Not a mapped boolean value: ${_us_str_varref@Q}"
   esac
 }
 

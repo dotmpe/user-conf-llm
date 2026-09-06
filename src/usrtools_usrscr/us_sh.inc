@@ -35,7 +35,7 @@ Shell() {
     idname=${1//[^A-Za-z0-9_]/_} \
     sidname=${1//[^A-Za-z0-9-]/-}
   if >/dev/null 2>&1 declare -F $idname; then rs="function $idname"; fi
-  if [[ -f "${C_INC:?}/$sidname.inc" ]]; then rs="${rs:+$rs, and }$sidname.inc"; fi
+  # FIXME: if [[ -f "${C_INC:?}/$sidname.inc" ]]; then rs="${rs:+$rs, and }$sidname.inc"; fi
   if [[ -n ${rs-} ]]
   then >&2 printf "%s: command not found (but found %s)\n" "$1" "$rs"
     return 127

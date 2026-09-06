@@ -144,7 +144,7 @@ fi
   (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Shell script cache file')}"
 : input "${2?$(:argv-err 2 'Associative array name(s)')}"
-  declare -gA "${@:2}" || failerr "Cannot declare global maps ${*@Q}" || return
+  declare -gA "${@:2}" || :failerr "Cannot declare global maps ${*@Q}" || return
   [[ -s "${1}" ]] && . "${1}" && {
       ! ((VERBOSE)) || {
           :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes) for ${*:2}" 1>&2 || : "???"
@@ -202,6 +202,7 @@ else
     say@v "${FUNCNAME[1]}: $(TODO "bash call arg inspection for outer function?")"
   }
 fi
+
 printf.lines() {
   local -n _pfl_arr=${1:?Array name}
   printf.line "${_pfl_arr[@]}"
@@ -238,7 +239,7 @@ TODO() {
     ((${#FUNCNAME[*]} > 1)) && : "${FUNCNAME[1]}()" || : "main"
     : "Unspecified to-do in ${_@Q}"
   }
-  ${TODO_call:-say@v} "${_}"
+  ${TODO_call:-:say-when} ${VERBOSITY:-1} "${_}"
   return ${_E_todo:-125}
 }
 
@@ -423,7 +424,7 @@ User-Script.Shell.variable-type-cache() {
   for sym; do
     if [[ ! ${_sh_vfl:+set} ]]; then
       :pass "$(2>/dev/null declare -p "${sym}")" ||
-        failerr "E$? getting ${sym@Q} typeset" || return
+        :failerr "E$? getting ${sym@Q} typeset" || return
       : "${_:8}"
       : "${_%% *}"
       _sh_vfl=$_
@@ -471,8 +472,8 @@ User-Script.Shell.variable-type-cache() {
     User-Script.Shell.variable-type-cache "$sym" &&
     case "$_sh_vfl" in
     ( -[Aa] ) :dump-pretty-global-array "$sym" ;;
-    ( * ) failerr "TODO: dump pretty ${sym@Q}" || return
-    esac || failerr "E$? making pretty dump for ${sym@Q}" || return
+    ( * ) :failerr "TODO: dump pretty ${sym@Q}" || return
+    esac || :failerr "E$? making pretty dump for ${sym@Q}" || return
   done
 }
 

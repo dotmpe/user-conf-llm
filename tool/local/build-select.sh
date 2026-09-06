@@ -82,9 +82,9 @@ case "${XREDO_TARGET}" in
     redo-stamp < <(grep -Pv '^([\t ]*|[\t ]*\#.*)$' test/_test_bootstrap.sh)
   ;;
 
-( @test )
-    :xredo-test-target &&
-    redo-stamp <<< "$(sh_funbody $_)" &&
+( @test:* )
+    :xredo-test-recipe &&
+    redo-stamp <<< "$(:funbody $_)" &&
     redo-ifchange @build:config
   ;;
 

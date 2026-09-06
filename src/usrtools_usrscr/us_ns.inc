@@ -17,7 +17,7 @@ Namespace() {
   declare -ga us_ns_state_assocs
 : env "${UC_NS_PATHS:=${UC_NS_PATHS:-.}}"
   :cache-load "/var/local/statusdir/meta,loader,uc.data.bash" &&
-  ..Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_NS_PATHS
+  : # FIXME: ..Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_NS_PATHS
 }
 ._hooks:load() {
   \builtin read -ra us_ns_state_assocs < <(

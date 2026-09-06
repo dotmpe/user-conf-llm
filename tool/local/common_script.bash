@@ -3,7 +3,7 @@
 #
 # Distributed under terms of the MIT license.
 test -d "$PWD/${scr_pre:?}" &&
-PATH+=:$_ && export PATH || failerr "Not a valid script prefix: ${scr_pre@Q}"
+PATH+=:$_ && export PATH || :failerr "Not a valid script prefix: ${scr_pre@Q}"
 
 \builtin . common_setup.bash
 shopt -s extdebug expand_aliases

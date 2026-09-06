@@ -10,7 +10,7 @@ var=./$VAR/redo_default.bash
   echo "New file $var" >&2
 }
 [ -e $etc ] || {
-  echo "xredo_all_targets=( @config @build @test )" > "$etc"
+  echo "xredo_all_targets=( @config @build @test @check )" > "$etc"
   echo "New file $etc" >&2
 }
 
