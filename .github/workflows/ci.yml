@@ -31,7 +31,8 @@ jobs:
       - name: Test summary
         uses: test-summary/action@v2
         with:
-          paths: .local/build/test-report.xml
+          paths: |
+            ".local/build/bashunit-test-report-*.xml"
 
       - name: Upload coverate to Codecov
         uses: codecov/codecov-action@v5
