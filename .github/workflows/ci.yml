@@ -25,4 +25,5 @@ jobs:
 
       - name: Run Redo for all build/check/test targets
         run: |
-          redo @config all
+          scr_pre=tool/local
+          \builtin . ${scr_pre:?}/ci_run.sh
