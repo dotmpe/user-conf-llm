@@ -33,4 +33,4 @@ jobs:
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: true
-          toeksn: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }}
