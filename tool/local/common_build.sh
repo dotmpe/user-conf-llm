@@ -18,13 +18,28 @@
     targets+=( "pack/ns1/${src%.inc}.bash" )
   done &&
   #>&2 :dump-pretty-globals sources targets &&
-  redo-ifchange .build-select.sh "${sources[@]}" "${targets[@]}"
+  redo-ifchange ${scr_pre:?}/build-select.sh "${sources[@]}" "${targets[@]}"
 }
 
 :xredo-config-target() {
-  redo-ifchange .build-select.sh
+  redo-ifchange ${scr_pre:?}/build-select.sh
   sources=( src/*/*.inc ) &&
+  # TODO: settle on failglob or not
   [[ ${sources[*]:+set} ]] || say.err "No sources found" || exit
+
+  tools=( tool/local/exec/*.* ) &&
+  for tool in "${tools[@]}"; do
+    scr=${tool##*/}
+    if [[ -h $scr && ! -e $scr ]]; then rm "$scr"; fi
+    if [[ ! -h $scr ]]; then
+      if [[ -e $scr ]]; then
+        say.err "config: Local tool path exists: ${scr@Q} (ignored)"
+        continue
+      fi
+      >&2 ln -sv "$tool" ${tool##*/} || return
+    fi
+  done
+
   #:dump-global-pretty sources >| ./$VAR/redo_default.bash &&
   declare -p sources >| ./$VAR/redo_default.bash &&
   redo-stamp <<< "${sources[@]}"
@@ -33,16 +48,16 @@
 :xredo-index-recipe() {
   src=src/${XREDO_TARGET#@index:}
   redo-ifchange "$src" &&
-  \builtin . ./init-pp.sh >&2 &&
+  \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
   .run "$src" .match-line > /dev/null || failerr "Indexing ${src@Q}"
 }
 
 :xredo-pack-recipe() {
   : "${XREDO_TARGET#pack/ns[0-9]/}"
   src=src/${_%.bash}.inc
-  redo-ifchange .build-select.sh "$src" &&
+  redo-ifchange ${scr_pre:?}/build-select.sh "$src" &&
   mkdir -p "${XREDO_TARGET%/*}" &&
-  \builtin . ./init-pp.sh >&2 &&
+  \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
   .run "$src" .match-line > "$BUILD_TARGET_TMP" ||
     failerr "Building ns1 for ${src@Q}"
 }
