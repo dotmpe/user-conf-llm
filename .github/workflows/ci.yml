@@ -29,7 +29,8 @@ jobs:
           \builtin . ${scr_pre:?}/ci_run.sh
 
       - name: Upload coverate to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage/lcov.info
           fail_ci_if_error: true
+          toeksn: ${{ secrets.CODECOV_TOKEN }}
