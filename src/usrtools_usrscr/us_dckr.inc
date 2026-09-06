@@ -19,7 +19,7 @@ Docker() {
 ._hooks:load() {
   \builtin read -ra uc_docker_imgconf_assocs < <(
     \builtin . <(echo echo ${UC_DOCKER_IMGCONF_MAPSPEC:?})) &&
-  cache_loadmaps "${UC_DOCKER_IMGCONF:?}" "${uc_docker_imgconf_assocs[@]:?}"
+  :cache-loadmaps "${UC_DOCKER_IMGCONF:?}" "${uc_docker_imgconf_assocs[@]:?}"
 }
 
 .build() {

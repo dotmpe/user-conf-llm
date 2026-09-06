@@ -5,9 +5,14 @@
 :xredo-check-recipe() {
   script=${XREDO_TARGET#@check:}
   redo-ifchange "$script"
-  ( \builtin . "$script" ) || failerr "Loading ${script@Q}" || return
-  shellcheck "$script" >&2 &&
-  say.v "Load and shellcheck passed for ${script@Q}"
+  case "$script" in
+  ( pack/* )
+      ( \builtin . "$script" ) || :failerr "Loading ${script@Q}" || return
+      shellcheck "$script" >&2 &&
+      say.v "Load and shellcheck passed for ${script@Q}"
+    ;;
+  ( * ) :failerr "There is no check action for script ${script@Q}"
+  esac
 }
 
 :xredo-build-target() {
@@ -43,6 +48,16 @@
   #:dump-global-pretty sources >| ./$VAR/redo_default.bash &&
   declare -p sources >| ./$VAR/redo_default.bash &&
   redo-stamp <<< "${sources[@]}"
+}
+
+:xredo-diag-target() {
+  redo-always
+  local tools targets
+  tools=( tool/local/{,exec/}*.* )
+  for tool in "${tools[@]}"; do
+    targets+=( "@check:uc_diag_regression_grep:$tool" )
+  done
+  redo-ifchange "${targets[@]}"
 }
 
 :xredo-index-recipe() {

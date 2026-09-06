@@ -18,20 +18,105 @@ fi
 
 :ignore() { "$@" || :; }
 :pass() { return; }
-:failerr() { failerr "$@"; }
-#:path-append() { User-Script.Operating-System.path-append "$@"; }
-:path-append() { path_append "$@"; }
+:failerr () {
+  local stat=${2:-$?}
+: about "Output message and set or pass-trough non-zero status (input 256 for 0)"
+: extended "Default is 1, and cannot be 0."
+: extended "The number is truncated to 255 and then rolls over again, so 256 equals 0, etc."
+: input "${1?$(:argv-err 1 'Failure message')}"
+  ((stat)) || stat=1
+  if [[ $stat -gt 255 ]]; then
+    ((stat-=256))
+  fi
+  if [[ -n ${_os_script_path['us-palette']:+set} && -n ${COLORTERM:+set} ]]; then
+    if [[ $stat -eq 0 ]]; then
+      echo "${C_PASS-}$1${NORMAL-}" 1>&2
+    else
+      if [[ $stat == 1 ]]; then
+        echo "${C_ABNORMAL-}$1${NORMAL-}" 1>&2
+      else
+        if [[ $stat == 2 ]]; then
+          echo "${C_ERROR-}$1${NORMAL-}" 1>&2
+        else
+          if [[ $stat -gt 2 && $stat -lt 128 ]]; then
+            echo "${C_ABNORMAL-}$1${NORMAL-}" 1>&2
+          else
+            if [[ $stat -gt 127 && $stat -lt 193 ]]; then
+              echo "${C_AUXILIARY-}$1${NORMAL-}" 1>&2
+            else
+              if [[ $stat -gt 192 && $stat -lt 255 ]]; then
+                echo "${C_CONTEXT-}$1${NORMAL-}" 1>&2
+              else
+                echo "${C_SECONDARY-}$1${NORMAL-}" 1>&2
+              fi
+            fi
+          fi
+        fi
+      fi
+    fi
+  else
+    echo "$1" 1>&2
+  fi
+  return ${stat}
+}
 
-:isfun() { User-Script.Shell.function-exists "$@"; }
-User-Script.Shell.function-exists () {
+:append-path () {
+: name User-Script.OS.path-assert
+  assert=1 :path-append "$@" || test 1 -eq $? || return $_
+}
+
+:path-append() {
+: name User-Script.OS.path-append
+: about "Simple PATH helper to append only new, unique instance"
+: param "<Directory ...> [<Var=PATH>]"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave       like path_append but returns false (1) if already found"
+: notes TODO "Really should write sys-wordv-add or something"
+: notes "This does not export PATH"
+: notes "This does not require explicit PATH name for single dir argument, and last argument can always be left empty for default"
+: notes "Not exactly like the same implementation as shipped with Debian/Ubuntu, see -assert variant"
+: completion 'complete -A directory'
+  local dirc _var
+  ! (($#-1)) && dirc=1 || dirc=$#-1 _var=${*: $#:1}
+  :lookup-append "${@:1: $dirc}" "${_var:-PATH}"
+}
+
+:lookup-append() {
+: name User-Script.OS.lookup-append
+: about "Simple PATH-var helper to append only new, unique instance"
+: param "<Directory ...> [<Var=PATH>]"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave       like path_append but returns false (1) if already found"
+: notes TODO "Really should write sys-wordv-add or something"
+: notes "This does not export the variable"
+: notes "This requires the variable name, use _OS_Path_* alternatively"
+: completion 'complete -A directory'
+  (($#-1)) || return ${_E_MA:-194}
+  local _PATHNAME=${*:$#:1}
+: input ${_PATHNAME:?$(:argv-err 1 'Lookup variable')}
+  local -n _PATH=$_PATHNAME
+  local _arg
+  for _arg in "${@:1: $#-1}"; do
+: input "${_arg:?$(:unset-err _arg 'Path value'):}"
+    case ":${_PATH:-:}:" in
+      ( *:"${_arg}":*)
+          ((${assert:-0})) || return 1
+        ;;
+      ( *)
+          _PATH="${_PATH:+${_PATH}:}${_arg}"
+        ;;
+    esac
+  done
+}
+
+:isfun() {
+: name User-Script.Shell.function-exists
 : param ' ~ <Funcname> ...'
 : completion 'complete -A function'
-: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}"
+: input "${1?$(:argv-err 1 'Function name')}"
   :pass "$(declare -F -- "${_}")"
 }
 
-:funbody () { User-Script.Shell.function-body "$@"; }
-User-Script.Shell.function-body () {
+:funbody () {
+: name User-Script.Shell.function-body
 : param '<Ref-fun> [<Dest-var>] ...'
 : input "${1?$(:argv-err 1 'Function name expected')}"
   (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out
@@ -42,8 +127,8 @@ User-Script.Shell.function-body () {
   (($#>1)) || echo "$_out"
 }
 
-:cache-load () { User-Conf.Cache.load-data "$@"; }
-User-Conf.Cache.load-data () {
+:cache-load () {
+: name User-Conf.Cache.load-data
   [[ -s "${1}" ]] && . "${1}" && {
       ! ((VERBOSE)) || {
           :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes)" 1>&2 || : "???"
@@ -51,8 +136,8 @@ User-Conf.Cache.load-data () {
   } || ! ((VERBOSE)) || echo "Missing or empty ${1@Q} cache (E$?, ignored)" 1>&2
 }
 
-:cache-loadmaps () { User-Conf.Cache.load-maps "$@"; }
-User-Conf.Cache.load-maps () {
+:cache-loadmaps () {
+: name User-Conf.Cache.load-maps
 : param '~ <Data-file> <Map-exports...>'
 : about 'Helper to retrieve map arrays from Shell cache file'
 : tag cache
@@ -392,17 +477,17 @@ User-Script.Shell.variable-type-cache() {
 }
 
 ..Namespace.map-to-ns1() { .map-to-ns1 "$@"; }
-..Operating-System.path-append() { .path-append "$@"; }
-
-# User-Script.Operating-System.path-append() { .path-append "$@"; }
-:isfun User-Script.Operating-System.path-append ||
-User-Script.Operating-System.path-append() { append_path "$@"; }
 
 ..String.join-array() { .join-array "$@"; }
 ..Shell.dump-globals() { .dump-globals "$@"; }
 
 :isfun User-Conf.Cache.load-data ||
 User-Conf.Cache.load-data() { .load-file "$@"; }
+
+..Operating-System.path-append() { :path-append "$@"; }
+:isfun User-Script.Operating-System.path-append ||
+User-Script.Operating-System.path-append() { :path-append "$@"; }
+
 
 if [[ ${0##*/} = common-dsl.bash ]]; then
 
