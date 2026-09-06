@@ -8,7 +8,9 @@ curl -s https://bashunit.com/install.sh | bash
 
 # Install redo from dotmpe/redo
 REDO_TMP="$(mktemp -d)"
-git clone --branch ifdone --depth 1 https://github.com/dotmpe/redo.git "$REDO_TMP"
+# NOTE: need tags and cannot specify --depth 1
+# TODO: check out github distributions +redo
+git clone --branch ifdone https://github.com/dotmpe/redo.git "$REDO_TMP"
 (
   cd "$REDO_TMP"
   ./do -j10 build
