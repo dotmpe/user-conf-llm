@@ -162,7 +162,6 @@
     return
   fi
 
-  #declare -f :say-when say.v >&2
   :cache-load ./etc/bash/us_bbb_specials.bash &&
   export -f "${us_bbb_specials[@]:?}" ||
     say.err "Failed at loading specials" || return
@@ -173,7 +172,7 @@
   testid=$(sha256sum < <(printf '%s\n' "${tests[@]}")) &&
   : $'[\t ]' &&
   testid=${testid%%$_*} &&
-  >&2 declare -p testid &&
+  # >&2 declare -p testid &&
   mkdir -p .local/build &&
   \builtin command bashunit \
     --env test/_test_bootstrap.sh \
