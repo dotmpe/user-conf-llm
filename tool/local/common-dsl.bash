@@ -34,6 +34,37 @@ User-Script.Shell.function-body () {
   (($#>1)) || echo "$_out"
 }
 
+:cache-load () { User-Conf.Cache.load-data "$@"; }
+User-Conf.Cache.load-data () {
+  [[ -s "${1}" ]] && . "${1}" && {
+      ! ((VERBOSE)) || {
+          if_ok "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes)" 1>&2 || : "???"
+      }
+  } || ! ((VERBOSE)) || echo "Missing or empty ${1@Q} cache (E$?, ignored)" 1>&2
+}
+
+:cache-loadmaps () { User-Conf.Cache.load-maps "$@"; }
+User-Conf.Cache.load-maps () {
+: param '~ <Data-file> <Map-exports...>'
+: about 'Helper to retrieve map arrays from Shell cache file'
+: tag cache
+  (($#)) || return ${_E_MA:?};
+: input "${1?$(:argv-err 1 'Shell script cache file')}"
+: input "${2?$(:argv-err 2 'Associative array name(s)')}"
+  declare -gA "${@:2}" || failerr "Cannot declare global maps ${*@Q}" || return
+  [[ -s "${1}" ]] && . "${1}" && {
+      ! ((VERBOSE)) || {
+          if_ok "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes) for ${*:2}" 1>&2 || : "???";
+          local -n _ref;
+          for _ref in "${@:2}";
+          do
+              [[ ! -n "${_ref[*]:+set}" ]] || echo "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2;
+          done
+      }
+  } || ! ((VERBOSE)) || echo "Missing or empty $1 cache (E$?, ignored)" 1>&2
+}
+
+
 :argv-err() {
 : about 'Output helper for unset/undefined argument position expressions'
 : param '~ <Position> <Label> <"expected "> <"at position "> ...'

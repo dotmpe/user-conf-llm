@@ -10,7 +10,6 @@
 . src/usrtools_usrscr/us_pp.inc
 ._hooks:global
 ._hooks:load
-#cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static} &&
 . src/usrtools_usrscr/us_os.inc
 . src/usrtools_usrscr/us_str.inc
 . src/usrtools_usrscr/us_ns.inc

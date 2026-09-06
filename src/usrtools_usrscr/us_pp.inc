@@ -41,7 +41,7 @@ that an actual line can be re-read from it. '
   \builtin read -ra us_pp_run_settings < <(
     \builtin . <(echo echo ${US_PP_RUN_SPEC:?}))
 
-  cache_loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
+  :cache-loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
 }
 
 ._block-append() {
