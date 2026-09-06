@@ -22,6 +22,14 @@ fi
 #:path-append() { User-Script.Operating-System.path-append "$@"; }
 :path-append() { path_append "$@"; }
 
+:isfun() { User-Script.Shell.function-exists "$@"; }
+User-Script.Shell.function-exists () {
+: param ' ~ <Funcname> ...';
+: completion 'complete -A function';
+: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}";
+  :pass "$(declare -F -- "${_}")"
+}
+
 :funbody () { User-Script.Shell.function-body "$@"; }
 User-Script.Shell.function-body () {
 : param '<Ref-fun> [<Dest-var>] ...';
@@ -388,13 +396,13 @@ User-Script.Shell.variable-type-cache() {
 ..Operating-System.path-append() { .path-append "$@"; }
 
 # User-Script.Operating-System.path-append() { .path-append "$@"; }
-sh_fun User-Script.Operating-System.path-append ||
+:isfun User-Script.Operating-System.path-append ||
 User-Script.Operating-System.path-append() { append_path "$@"; }
 
 ..String.join-array() { .join-array "$@"; }
 ..Shell.dump-globals() { .dump-globals "$@"; }
 
-sh_fun User-Conf.Cache.load-data ||
+:isfun User-Conf.Cache.load-data ||
 User-Conf.Cache.load-data() { .load-file "$@"; }
 
 if [[ ${0##*/} = common-dsl.bash ]]; then

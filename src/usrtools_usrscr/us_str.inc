@@ -198,9 +198,9 @@ String() {
 : param '~ <Pattern-map> <Variable> [<Destination-variable>] ...'
   local _us_str_mapname=${1:?} _us_str_varname=${2:?} _us_str_outname=${3:-$2}
   local -n _us_str_varref=${2} _us_str_outref=${3:-$2}
-  if sh_fun "$1"; then
+  if :isfun "$1"; then
     . <($1)
-  elif sh_fun "$FUNCNAME$1"; then
+  elif :isfun "$FUNCNAME$1"; then
     . <(:funbody $FUNCNAME$1)
   elif [[ $1 =~ [A-Za-z_][A-Za-z0-9_]* ]]; then
     TODO "generate case/esac and cache, or iterate map" || return
