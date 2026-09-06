@@ -4,7 +4,7 @@
 # Want some vanilla bash support in barebonebootstrap profile...
 
 _us_pp_loads() {
-  _inline_fun_tpl=$(sh_funbody :inline.fun)
+  _inline_fun_tpl=$(:funbody :inline.fun)
   #shellcheck disable=2139  # var is expanded from tpl on assign
   alias inline-fun="${_inline_fun_tpl//_%_/___}"
 }

@@ -42,7 +42,7 @@ inner() {
 }
 false last
 . <(
-  sh_funbody pass &&
-  sh_funbody inner || exit 3
+  :funbody pass &&
+  :funbody inner || exit 3
 );
 true # status was false indeed

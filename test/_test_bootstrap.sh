@@ -3,5 +3,5 @@ set -euo pipefail
 IFS=$' \t\n'
 
 :inline.fun() {
-  \builtin . <(sh_funbody ${_%_})
+  \builtin . <(:funbody ${_%_})
 }

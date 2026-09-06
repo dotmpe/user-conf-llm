@@ -201,7 +201,7 @@ String() {
   if sh_fun "$1"; then
     . <($1)
   elif sh_fun "$FUNCNAME$1"; then
-    . <(sh_funbody $FUNCNAME$1)
+    . <(:funbody $FUNCNAME$1)
   elif [[ $1 =~ [A-Za-z_][A-Za-z0-9_]* ]]; then
     TODO "generate case/esac and cache, or iterate map" || return
   else

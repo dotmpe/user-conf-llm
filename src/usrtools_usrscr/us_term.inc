@@ -195,11 +195,11 @@ WRITE \033(B rmacs'
 : param '~ [options] [<Var> <Read-args...>]'
 : tag util
   local read_{flags,opts}
-  . <(sh_funbody ${FUNCNAME%.*}._read-flags ) &&
+  . <(:funbody ${FUNCNAME%.*}._read-flags ) &&
   if [[ ${read_flags:+set} ]]; then
     read_opts=( -"$read_flags" )
   fi &&
-  . <(sh_funbody ${FUNCNAME%.*}._read-options) &&
+  . <(:funbody ${FUNCNAME%.*}._read-options) &&
   read -r "${read_opts[@]}" "${@:-read_input}" #</dev/tty
 }
 

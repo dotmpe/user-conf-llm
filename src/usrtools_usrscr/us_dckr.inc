@@ -28,7 +28,7 @@ Docker() {
 : input "${1:?$(:argv-err 1 'Image-config key')}"
 
   # \inline ._common/context
-  . <(sh_funbody ._common/context)
+  . <(:funbody ._common/context)
 
   local imgconf_key=${1} dckrfile_path
 
@@ -70,7 +70,7 @@ Docker() {
 : param '~ .. --extra <Additional script>'
 : input "${1:?$(:argv-err 1 'Image-config key')}"
 : input "${2:?$(:argv-err 2 'Base image reference')}"
-  . <(sh_funbody ._common/context)
+  . <(:funbody ._common/context)
   local imgconf_key=${1} imgconf_base=${2}
 
   shift 2 || return ${_E_GAE:?}
@@ -78,7 +78,7 @@ Docker() {
     failerr "Configuration ${imgconf_key@Q} already exists" || return
   cache_updatemap "${UC_DOCKER_IMGCONF:?}" "${!__imgconf_from}" "${imgconf_base}" ||
     failerr "E$? during save" || return
-  . <(sh_funbody ._common/argparse)
+  . <(:funbody ._common/argparse)
 }
 
 .start() {
@@ -98,11 +98,11 @@ Docker() {
 : param '~ .. --packages <Names>'
 : param '~ .. --extra <Additional script>'
 : input "${1:?$(:argv-err 1 'Image-config key')}"
-  . <(sh_funbody ._common/context)
+  . <(:funbody ._common/context)
   local imgconf_key=${1}
 
   shift || return ${_E_GAE:?}
-  . <(sh_funbody ._common/argparse)
+  . <(:funbody ._common/argparse)
 }
 
 ._common/argparse() {

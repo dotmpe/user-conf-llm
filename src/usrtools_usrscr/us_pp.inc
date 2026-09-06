@@ -129,7 +129,7 @@ that an actual line can be re-read from it. '
 
   #:read-setting US_PP_RUN_SPEC "$@"
   local us_pp_matcher=${2:-User-Script.Format.Include.match-line}
-  #\builtin . <(sh_funbody ._run-common+startup)
+  #\builtin . <(:funbody ._run-common+startup)
   inline ___=._run-common+startup; inline-fun
   ._source "$1" || return
 

@@ -22,6 +22,18 @@ fi
 #:path-append() { User-Script.Operating-System.path-append "$@"; }
 :path-append() { path_append "$@"; }
 
+:funbody () { User-Script.Shell.function-body "$@"; }
+User-Script.Shell.function-body () {
+: param '<Ref-fun> [<Dest-var>] ...';
+: input "${1?$(:argv-err 1 'Function name expected')}";
+  (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out;
+  if_ok "$(typeset -f "$1")" || return;
+  : "${_#* () }";
+  : "${_:4:-2}";
+  _out="$_";
+  (($#>1)) || echo "$_out"
+}
+
 :argv-err() {
 : about 'Output helper for unset/undefined argument position expressions'
 : param '~ <Position> <Label> <"expected "> <"at position "> ...'
@@ -125,19 +137,19 @@ TODO() {
 
 :inline.fun() {
 : about 'Include body of function, as-is as source'
-  \builtin . <(sh_funbody ${_%_})
+  \builtin . <(:funbody ${_%_})
 }
 
 :inline.fun.status() {
 : about 'Include body of function with return status'
-  \builtin . <(sh_funbody ${_%_} _fb_script && echo "${_fb_script:?} || return")
+  \builtin . <(:funbody ${_%_} _fb_script && echo "${_fb_script:?} || return")
 }
 
 # TODO: strip (most) : lines in sh_funscr <fun>, or use specific call: sh_funscr_nometa {als,tag,about,type} ...
-_inline_fun_tpl=$(sh_funbody :inline.fun)
+_inline_fun_tpl=$(:funbody :inline.fun)
 #shellcheck disable=2139  # var is expanded from tpl on assign
 alias inline-fun="${_inline_fun_tpl//_%_/___}"
-_inline_fun_status_tpl=$(sh_funbody :inline.fun.status)
+_inline_fun_status_tpl=$(:funbody :inline.fun.status)
 #shellcheck disable=2139  # var is expanded from tpl on assign
 alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
 
@@ -298,7 +310,7 @@ User-Script.Shell.variable-type-cache() {
 
 :sort-array() {
 : param "<Arr-in> ..."
-: input "${1:?$FUNCNAME${*:+ $*}: Input array(s) expected, $ENV_CTX}"
+: input "${1?$(:argv-err 1 'Input array(s) expected')}"
   local -n __arr_in=${1}
   local -n __arr_out=${2:-$1}
   IFS=$'\n'
