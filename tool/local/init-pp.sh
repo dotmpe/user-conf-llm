@@ -1,11 +1,4 @@
 #!/bin/bash
-#
-# init-pp.sh
-# Copyright (C) 2026 hari <hari@t470p>
-#
-# Distributed under terms of the MIT license.
-#
-
 . src/usrtools_usrconf/uc_cache.inc
 . src/usrtools_usrscr/us_pp.inc
 ._hooks:global

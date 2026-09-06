@@ -16,7 +16,7 @@ Namespace() {
 : env "${US_NS_STATE_MAPSPEC:=us_ns_{map{0..3\}\}}"
   declare -ga us_ns_state_assocs
 : env "${UC_NS_PATHS:=${UC_NS_PATHS:-.}}"
-  :cache-load "/var/local/statusdir/meta,loader,uc.data.bash" &&
+  :cache-load "etc/bash/uc_meta_ns.seed.bash" &&
   : # FIXME: ..Operating-System.path-append "${C_INC:?}" "${US_BIN:?}" "${U_S:?}" "${U_C:?}" "${UCONF:?}" UC_NS_PATHS
 }
 ._hooks:load() {

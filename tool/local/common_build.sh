@@ -5,14 +5,15 @@
 :uc-diag:forbidden-patterns() {
   # NOTE: this file and other tools are in tool/local/*, so patterns
   # themselves must (in general) be kept as config (elsewhere).
-  :pass "$(< etc/diag_forbidden_patterns.bash.lines )" &&
-  . <(printf "forbidden=( %s )" "$_") &&
+  redo-ifchange etc/diag_forbidden_patterns.bash.lines &&
+  :pass "$(< $_ )" &&
+  . <(printf "forbidden=(\m%s\n)" "$_") &&
   [[ ${forbidden[*]:+set} ]] ||
     :failerr "No forbidden patterns configured" || return
 
   # Search (grep) file for certain expressions, warn about match(es)
   for x in "${forbidden[@]}"; do
-    grep -HPn "^[^#]+$x" "$script" >&2 || continue
+    grep -HPn "^[^#:]*$x" "$script" >&2 || continue
     :failerr "Found forbidden ${x@Q}, see before lines" || return
   done
 }
@@ -24,18 +25,20 @@
 }
 
 :uc-diag:unguarded-tooling-invocations() {
+
   # FIXME: this does not work right yet; should require \builtin command for
   # certain toolkit commands (for recognition)
   # And for source/. (eval is kept in forbidden expressions)
   # But for other may introduce \reserved or \uc_reserved or similar. And should
   # know (scan/index) those with us-pp.
   # Same for some other commands, should require \inline prefix (later).
-  mapfile -t cmds < etc/diag_core_tooling.list &&
+  redo-ifchange etc/diag_core_tooling.list &&
+  mapfile -t cmds < $_ &&
   [[ ${cmds[*]:+set} ]] ||
     :failerr "No cmds configured" || return
 
   :pass "$(IFS='|'; echo "${cmds[*]}")" &&
-  grep -HPn "^[^#]+(?<!\\\bbuiltin[ \t])(?<!\\\)\b(${_:?})\b" -- "$script" >&2 ||
+  grep -HPn "^[^#:]*(?<!\\\bbuiltin[ \t])(?<!\\\)\b(${_:?})\b" -- "$script" >&2 ||
     return 0
   :failerr "Found unguarded tooling invocation(s), see before lines"
 }
@@ -112,6 +115,7 @@
 
   tools=( tool/local/exec/*.* ) &&
   for tool in "${tools[@]}"; do
+    [[ -x "$tool" ]] || continue
     scr=${tool##*/}
     if [[ -h $scr && ! -e $scr ]]; then rm "$scr"; fi
     if [[ ! -h $scr ]]; then
@@ -157,9 +161,20 @@
     # TODO: require tests later
     return
   fi
+
+  #declare -f :say-when say.v >&2
+  :cache-load ./etc/bash/us_bbb_specials.bash &&
+  export -f "${us_bbb_specials[@]:?}" ||
+    say.err "Failed at loading specials" || return
+
   tests=( test/"${modid:?}"_test.* ) &&
   redo-ifchange @test:config "${tests[@]}" &&
-  \builtin command bashunit --bootstrap test/_test_bootstrap.sh "${tests[@]}" >&2
+  mkdir -p .local/build &&
+  \builtin command bashunit \
+    --env test/_test_bootstrap.sh \
+    --log-junit .local/build/test-report.xml \
+    --coverage --coverage-min 80 \
+    "${tests[@]}" >&2
 }
 
 :xredo-test-target() {
@@ -182,4 +197,4 @@
   redo-ifchange "${targets[@]}" || return
 }
 
-#
+# Id: common_build                               vim:set ft=bash sw=2 sts=2 et:

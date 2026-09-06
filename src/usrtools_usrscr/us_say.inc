@@ -37,13 +37,13 @@ on their own options and needs.
 .say-when() {
 : param '~ <Level> <Message> ...'
 : tag util
-: input "${1:?$FUNCNAME: Verbosity level, $ENV_CTX}"
-: input "${2:?$FUNCNAME: Verbal message, $ENV_CTX}"
+: input "${1?$(:argv-err 1 'Verbosity level')}"
+: input "${2?$(:argv-err 2 'Verbal message')}"
   local level=${1:-0} message=${2}
   ((level>3 && level=3 || level>-1 || level=3))
 
   if ((VERBOSITY>=level)); then
-    :
+    TODO
   fi
 }
 
@@ -53,7 +53,7 @@ on their own options and needs.
 : extended "Status value is clipped to 0>...>256, cannot be 0"
 : als failerr
 : tag util
-: input "${1:?$FUNCNAME: Failure message, $ENV_CTX}"
+: input "${1?$(:argv-err 1 'Failure message')}"
 
   ((stat>255 && stat=255 || stat>0 || stat=1))
   inline-part +colorterm .say_stderr
@@ -92,8 +92,8 @@ on their own options and needs.
 
 .write-at() {
 : param '~ <FD> <Message> ...'
-: input "${1:?$FUNCNAME: Reserved FD_ tag expected}" "See US_CHANNELS list"
-: input "${2:?$FUNCNAME: Message expected}"
+: input "${1?$(:argv-err 1 'Reserved FD_ tag expected')}" "See US_CHANNELS list"
+: input "${2?$(:argv-err 2 'Message expected')}"
   local -n __FD=FD_${1}
 
   >&$__FD echo "$1"

@@ -65,4 +65,4 @@ fi
 
 : env "${C_INC:=$HOME/.local/composure}"
 
-# Id: common_env                          vim:set ft=bash sw=2 sts=2 et:
+# Id: common_env                                 vim:set ft=bash sw=2 sts=2 et:

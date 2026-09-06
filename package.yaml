@@ -21,6 +21,12 @@
 
       aider: 'aider+user'
 
+    scripts:
+      bashunit+install: |
+        { curl -s https://bashunit.com/install.sh | bash; } &&
+        sudo mv -v lib/bashunit /usr/local/bin/ &&
+        \builtin command -v bashunit >/dev/null 2>&1
+
       bashunit+llm+docs+update: |
         mkdir -p .local/agent &&
         curl -s https://bashunit.com/llms.txt \
@@ -28,13 +34,23 @@
         curl -s https://bashunit.com/llms-full.txt \
           -o .local/agent/bashunit-docs.txt
 
-      bashunit+llm+skills+update:
+      bashunit+llm+skills+update: |
         mkdir -p .claude/skills/bashunit &&
         curl -sL https://bashunit.com/bashunit-skill.md \
           -o .claude/skills/bashunit/SKILL.md
 
-    scripts: {}
+      redo-ifdone.mpe+install: |
+        REDO_TMP="$(mktemp -d)"
+        git clone --branch ifdone https://github.com/dotmpe/redo.git "$REDO_TMP" &&
+        (
+          cd "$REDO_TMP" &&
+          ./do -j10 build &&
+          sudo DESTDIR= PREFIX=/usr/local ./do -j10 install &&
+          \builtin command -v redo >/dev/null 2>&1 &&
+          sudo rm -rf "$REDO_TMP"
+        )
+
   scm-ignores: .gitignores
   source: dotmpe/user-conf-llm.git
   created: "[Fri 28] [35'26] [2026-08-28] [01:01Z]"
-  updated: 2026-09-06T02:38+02:00
+  updated: 2026-09-06T07:57+02:00

@@ -25,7 +25,7 @@ suffixing to the current load sequence.
 Hooks are triggered next first, and again two more times after the entire
 sequence has run. The phases are:
 
-- preopts - literally, before us-part core applies options for part;
+- preopts - literally, before us-part core applies options for part\;
 - global - hold globals that are not covered elsewhere, and dynamic declarations that cannot be in preopts
 - load - the usual place to call or prepare things outside of local functions
 
@@ -58,7 +58,7 @@ For usage refer to the individual functions.
 }
 
 .main() {
-  .part-main "$@";
+  .part-main "$@" \;
 }
 
 .part-main() {

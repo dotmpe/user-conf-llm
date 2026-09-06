@@ -11,8 +11,7 @@ String() {
   [[ ${2:+set} ]] && _us_str_in1=${2} || _us_str_in1=${_us_str_glob1}
 : input "${_us_str_in1:?$(:unset-err $_us_str_in1 "String value")}"
   _us_str_glob1=
-  while read -r -n 1 _us_str_char1
-  do
+  while read -r -n 1 _us_str_char1; do
     case "$_us_str_char1" in
     ( [A-Za-z] ) _us_str_glob1+="[${_us_str_char1^}${_us_str_char1,}]" ;;
     ( * ) _us_str_glob1+="${_us_str_char1}"
@@ -182,7 +181,7 @@ String() {
   if [[ ${4:+set} && $4 != - ]]; then
     _us_str_ls_in=$4
   else
-    _ read -rd '' _us_str_ls_in
+    :ignore read -rd '' _us_str_ls_in
   fi
 
   [[ ${_us_str_ls_in:+set} ]] ||

@@ -2,7 +2,7 @@
 
 ETC=.local/etc
 VAR=.local/var
-mkdir -vp "$ETC" "$VAR" >&2
+mkdir -vp "$ETC" "$VAR" .local/user/data >&2
 etc=./$ETC/redo_default.bash
 var=./$VAR/redo_default.bash
 [ -e "$var" ] || {
@@ -14,4 +14,6 @@ var=./$VAR/redo_default.bash
   echo "New file $etc" >&2
 }
 
-redo -k @config all
+redo -j10 -k @config all
+
+# Id: ci_run                                       vim:set ft=sh sw=2 sts=2 et:

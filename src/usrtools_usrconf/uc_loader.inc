@@ -14,6 +14,7 @@ Loader() {
   : "${UC_LOADER_DIR:=$PWD/src}" ||
   : "${UC_LOADER_DIR:=${C_INC:?}}"
   : "${UC_INC_PATH:=${UC_INC_DIR:?}}"
+  # TODO: move. this would be appropiate for uc-dev may be
   :path-append "$UC_INC_DIR" "$UC_LOADER_DIR" UC_INC_PATH
   [[ ! -d $PWD/src ]] || :path-append "$PWD/src" UC_INC_PATH
 }
@@ -39,12 +40,12 @@ Loader() {
 
   loader_dir="${2:-${UC_LOADER_DIR-}}"
   [[ ${loader_dir:+set} && -d "$loader_dir" ]] ||
-    failerr "Source root directory needed" || return
+    :failerr "Source root directory needed" || return
 
   source_ref=${1}
   source_path=$(PWD=$loader_dir realpath -m "${source_ref}") ||
   #source_path=$(realpath -m --relative-to "$loader_dir" "${1}") ||
-    failerr "Cannot resolve ${1@Q} against ${loader_dir@Q}" || return
+    :failerr "Cannot resolve ${1@Q} against ${loader_dir@Q}" || return
 
   source_base=${source_ref%".$ext"}
   #source_name=${source_base##*/}
@@ -73,7 +74,7 @@ Loader() {
           _6="${_5//[%.]/"${source_base##*/}"}"
           _7="/${source_base}${_6:+/$_6}"
           [[ ${_7} =~ [A-Za-z_][A-Za-z0-9_]* ]] ||
-            failerr "Name violation ${_7@Q}" || return
+            :failerr "Name violation ${_7@Q}" || return
           local_names+=( "$_7" )
           echo "${_7} () {"
           continue 2
@@ -91,11 +92,11 @@ Loader() {
         ;;
       ( \ \  | \}* ) break ;;
       ( [!\ ]* ) TODO "Unexpected syntax for $ext file" ;;
-      ( * ) failerr "Unexpected line ${source_line@Q}" || return ;;
+      ( * ) :failerr "Unexpected line ${source_line@Q}" || return ;;
     esac; do continue; done
     echo "$source_line"
   done < "$loader_dir/$source_base.$ext" ||
-    failerr "E$? reading ${source_name@Q}" || return
+    :failerr "E$? reading ${source_name@Q}" || return
   if [[ ${uc_inc_meta[*]:+set} ]]; then
     declare -p uc_inc_meta
   fi

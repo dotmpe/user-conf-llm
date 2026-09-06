@@ -129,11 +129,16 @@ fi
 
 :cache-load () {
 : name User-Conf.Cache.load-data
-  [[ -s "${1}" ]] && . "${1}" && {
-      ! ((VERBOSE)) || {
-          :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes)" 1>&2 || : "???"
-      }
-  } || ! ((VERBOSE)) || echo "Missing or empty ${1@Q} cache (E$?, ignored)" 1>&2
+: tag cache
+  (($#)) || return ${_E_MA:?}
+
+  [[ -s "${1}" ]] &&
+  \builtin . "${1}" && {
+    ! ((VERBOSE)) || {
+      :pass "$(du -hs "${1}")" && : "${_%%'	'*}" &&
+      say.debug "Cache loaded ($_ bytes)" 1>&2 || : "???"
+    }
+  } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
 
 :cache-loadmaps () {
@@ -144,16 +149,21 @@ fi
   (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Shell script cache file')}"
 : input "${2?$(:argv-err 2 'Associative array name(s)')}"
-  declare -gA "${@:2}" || :failerr "Cannot declare global maps ${*@Q}" || return
+
+  declare -gA "${@:2}" ||
+    :failerr "Cannot declare global maps ${*@Q}" || return
   [[ -s "${1}" ]] && . "${1}" && {
       ! ((VERBOSE)) || {
-          :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes) for ${*:2}" 1>&2 || : "???"
+          :pass "$(du -hs "${1}")" &&
+          : "${_%%'	'*}" &&
+          say.debug "Cache loaded ($_ bytes) for ${*:2}" || : "???"
           local -n _ref
           for _ref in "${@:2}"; do
-              [[ ! -n "${_ref[*]:+set}" ]] || echo "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
+            [[ ! -n "${_ref[*]:+set}" ]] ||
+              say.v "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
           done
       }
-  } || ! ((VERBOSE)) || echo "Missing or empty $1 cache (E$?, ignored)" 1>&2
+  } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
 
 
@@ -517,4 +527,4 @@ if [[ ${0##*/} = common-dsl.bash ]]; then
   declare -f myArgsRead
 fi
 
-# Id: common-dsl                          vim:set ft=bash sw=2 sts=2 et:
+# Id: common-dsl                                 vim:set ft=bash sw=2 sts=2 et:

@@ -50,7 +50,7 @@ Dev() {
         #  fi
         #done <"$path/.gitignore"
         #printf.lines.array args
-        :
+        : TODO proc ignore lines
       fi
       echo "Scanning ${path} for tags..."
       \builtin command grep "${args[@]}" "${path}" || true

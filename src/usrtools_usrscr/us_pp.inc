@@ -73,7 +73,7 @@ that an actual line can be re-read from it. '
 }
 
 ._shift-line() {
-  if ! IFS= read -r us_pp_line <&$us_pp_fd; then
+  if ! IFS= read -r us_pp_line <&${us_pp_fd:?}; then
     # close after EOF on current FD
     exec {us_pp_fd}<&- || {
       us_pp_fail_stat=$?
@@ -201,6 +201,7 @@ that an actual line can be re-read from it. '
   local us_pp_lnr=0
 
   [[ ${us_pp_lang-} ]] ||
+  ! ((DEBUG)) ||
     say.err "Language expected for prefilter and/or comment + shebang/modeline formats (ignored)"
   : "${us_pp_lang:=}"
 

@@ -77,10 +77,10 @@ User-Script.Package.set-to-local ()
 : private-prefix package
 : param '~ <Package-path> [<Id>] ...'
 : input "${1:?Package path}"
-  [[ -d "${1}" ]] || failerr "Package basedir location expected" || return
+  [[ -d "${1}" ]] || :failerr "Package basedir location expected" || return
   package_dir="$1"
   package_detect ||
-    failerr "E$? looking for package filename" 127 || return
+    :failerr "E$? looking for package filename" 127 || return
 
   >&2 mkdir -vp \
     ${LCACHE_DIR} \
@@ -95,7 +95,7 @@ User-Script.Package.set-to-local ()
 
   PACKAGE_JSON=$LCACHE_DIR/package.json
   [[ -s $PACKAGE_JSON && $PACKMETA -ot $PACKAGE_JSON ]] || {
-    package_updatejson || failerr "E$? updating JSON" || return
+    package_updatejson || :failerr "E$? updating JSON" || return
   }
 
   # Now check requested Id or get
@@ -117,7 +117,7 @@ User-Script.Package.set-to-local ()
   PACK_SH=$PACK_DIR/$package_id.sh
   package_getjsonpart &&
   jsotk.py dump -I json -O fkv "$PACK_JSON" "$PACK_SH" ||
-    failerr "E$? dumping shell keys"
+    :failerr "E$? dumping shell keys"
 }
 
 User-Script.Package.update-part-json ()
@@ -130,7 +130,7 @@ User-Script.Package.update-part-json ()
   ' "$list_json" >"$part_json" &&
   [[ -s "$part_json" ]] && grep -qv '^null$' "$part_json" || {
     rm "$part_json"
-    failerr "Failed reading package '$package_id' from $list_json ($?)" 1
+    :failerr "Failed reading package '$package_id' from $list_json ($?)" 1
   }
 }
 
@@ -145,7 +145,7 @@ User-Script.Package.update-json ()
   case "$1" in
   ( *.sh )            grep '^[^]*=' "$1" | jsotk.py dump -I fkv - "$2" ;;
   ( *.yml | *.yaml )  jsotk.py yaml2json "$1" "$2" ;;
-  ( * )               return 99;
+  ( * )               return 99
   esac
 }
 

@@ -237,7 +237,7 @@ Array() {
 : input ${3:?$(:argv-err 3 'Append string')}
 
   local _map_from=${2} _map_to=${3} _set_new
-  .map-set '_set_new=${_set_in%$_map_from};
+  .map-set '_set_new=${_set_in%$_map_from}\;
     [[ ${_set_new} == "${_set_in}" ]] || _set_out=$_set_new$_map_to' "${1}"
 }
 

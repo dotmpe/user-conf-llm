@@ -17,4 +17,4 @@ usp() { us_part $usp_opts "$@"; }
 \builtin . common_env.bash
 METADIR=.local
 
-# Id: common_script                          vim:set ft=bash sw=2 sts=2 et:
+# Id: common_script                              vim:set ft=bash sw=2 sts=2 et:

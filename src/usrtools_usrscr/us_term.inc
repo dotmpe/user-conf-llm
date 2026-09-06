@@ -76,7 +76,7 @@ WRITE \033(B rmacs'
     sleep ${TERM_READ_TIMEOUT} || continue
     ((readfails+=1))
     [[ $readfails -le $TERM_READ_TRIES ]] ||
-      failerr "Could not get cursor position" || return
+      :failerr "Could not get cursor position" || return
   done
   pos="${pos#*\[}"
   _ust_cp_row="${pos%;*}"
@@ -220,11 +220,11 @@ WRITE \033(B rmacs'
     ( [A-Za-z_]* ) _us_term_varref1=${!a}; break ;;
     ( -* ) continue ;;
     ( [!A-Za-z_-]* )
-      failerr "Invalid argument for $FUNCNAME: ${1@Q}" || return ;;
-    #( * ) failerr "Unexpected match value ${1@Q}" || return
+      :failerr "Invalid argument for $FUNCNAME: ${1@Q}" || return ;;
+    #( * ) :failerr "Unexpected match value ${1@Q}" || return
   esac; done &&
   if [[ ! ${!_us_term_varref1:+set} ]]; then
-    failerr "Variable name expected" || return
+    :failerr "Variable name expected" || return
   fi &&
   if ((offset)); then
     .read-input "${@:1:offset-2}" "${@:offset}" || return
@@ -249,7 +249,7 @@ WRITE \033(B rmacs'
     : "${capname:?$FUNCNAME${*:+ $*}: Capability name for $var}"
     :pass "$(2>/dev/null tput $capname)" &&
     declare -g $var=$_ || {
-      failerr "No $capname for terminal $TERM"
+      :failerr "No $capname for terminal $TERM"
       fail=1
       declare -g $var
     }
@@ -290,7 +290,7 @@ WRITE \033(B rmacs'
     # Define variables to set foreground and background for each palette color
     # as well.
     .load-truecolor-vars "${1}" ||
-      failerr "E$? configuring terminal for palette $1" || return
+      :failerr "E$? configuring terminal for palette $1" || return
 
   { tput -S <<end
 setaf

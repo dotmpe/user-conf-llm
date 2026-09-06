@@ -90,7 +90,7 @@ Shell() {
 : input "${2:?$(:argv-err 2 'Array variable name')}"
 : completion 'complete -A arrayvar'
   #shellcheck disable=2162   # read without -r
-  :pass "$(eval "echo $1")" &&
+  :pass "$(\builtin eval "echo $1")" &&
   <<< "${_}" read -a ${2:?}
 }
 
@@ -112,8 +112,9 @@ Shell() {
 : param '<Function-name> <Function-body>'
 : input "${1:?$(:argv-err 1 'Function name')}"
 : input "${2:?$(:argv-err 2 'Function body')}"
-  : "${1} () { ${*:2}; }"
-  eval "$_"
+  : "${*:2}"
+  : "${1} () { ${_:?}; }"
+  \builtin eval "$_"
 }
 
 .function-exists() {
@@ -130,8 +131,7 @@ Shell() {
   local -n _tab=${1}
 : input "${_tab:?$(:unset-err $1 "Table value ")}"
   local dest sources
-  while read -r dest sources
-  do
+  while read -r dest sources; do
     declare -n _dest=$dest _src
     [[ ! ${_dest:+set} ]] || continue
     for _src in $sources
@@ -139,7 +139,7 @@ Shell() {
       _dest=$_src
       continue 2
     done
-    failerr "$FUNCNAME: No value for ${!_dest} (from $sources, ignored)"
+    :failerr "$FUNCNAME: No value for ${!_dest} (from $sources, ignored)"
   done <<< "${_tab}"
 }
 
@@ -150,15 +150,14 @@ Shell() {
   local -n _map=${1}
 #: input "${_map:?$(:unset-err $1 "Variable value")}"
   local o=0
-  while [[ $o -lt ${#_map[@]} ]]
-  do
+  while [[ $o -lt ${#_map[@]} ]]; do
     # XXX: to test
     declare -n _dest='_map[@]:o:1' _src='_map[@]: o+1:1'
     #declare -n _dest=${_map[@]:o:1} _src=${_map[@]: o+1:1}
     [[ ${_dest:+set} ]] || {
       [[ ${_src:+set} ]] &&
       _dest=$_src ||
-      ignore failerr "$FUNCNAME: No value for ${1} (from ${2}, ignored)"
+      :ignore :failerr "$FUNCNAME: No value for ${1} (from ${2}, ignored)"
     }
     ((o+=2))
   done
@@ -170,8 +169,7 @@ Shell() {
 : input "${1:?$(:argv-err 1 'Destination variable')}"
 : input "${2:?$(:argv-err 2 'Field name')}"
   local _line
-  while read -r _line
-  do
+  while read -r _line; do
     [[ ${_line} =~ ^[$' \t']*([:\ _]+)${2}\ +[\'\"]?([^\'\"\;]+) ]] || continue
     break
   done
@@ -297,11 +295,10 @@ Shell() {
 # that is better/faster
   local sym
   local -n _sh_vfl='us_shell_tspec["$sym"]'
-  for sym
-  do
+  for sym; do
     if [[ ! ${_sh_vfl:+set} ]]; then
       :pass "$(2>/dev/null declare -p "${sym}")" ||
-        failerr "E$? getting ${sym@Q} typeset" || return
+        :failerr "E$? getting ${sym@Q} typeset" || return
       : "${_:8}"
       : "${_%% *}"
       _sh_vfl=$_

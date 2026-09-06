@@ -1,5 +1,7 @@
 #!/bin/bash
-
+#
+# list-metadata.sh (x)
+#
 scr_pre=tool/local
 \builtin . $scr_pre/common_script.bash
 \builtin . $scr_pre/common-dsl.bash

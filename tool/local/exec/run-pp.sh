@@ -1,9 +1,6 @@
 #!/bin/bash
 #
-# run-pp.sh
-# Copyright (C) 2026 hari <hari@t470p>
-#
-# Distributed under terms of the MIT license.
+# run-pp.sh (x)
 #
 scr_pre=tool/local
 \builtin . $scr_pre/common_script.bash
