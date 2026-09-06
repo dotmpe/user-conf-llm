@@ -24,21 +24,21 @@ fi
 
 :isfun() { User-Script.Shell.function-exists "$@"; }
 User-Script.Shell.function-exists () {
-: param ' ~ <Funcname> ...';
-: completion 'complete -A function';
-: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}";
+: param ' ~ <Funcname> ...'
+: completion 'complete -A function'
+: input "${1:?$FUNCNAME${*:+ $*}: Function name, $ENV_CTX}"
   :pass "$(declare -F -- "${_}")"
 }
 
 :funbody () { User-Script.Shell.function-body "$@"; }
 User-Script.Shell.function-body () {
-: param '<Ref-fun> [<Dest-var>] ...';
-: input "${1?$(:argv-err 1 'Function name expected')}";
-  (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out;
-  :pass "$(typeset -f "$1")" || return;
-  : "${_#* () }";
-  : "${_:4:-2}";
-  _out="$_";
+: param '<Ref-fun> [<Dest-var>] ...'
+: input "${1?$(:argv-err 1 'Function name expected')}"
+  (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out
+  :pass "$(typeset -f "$1")" || return
+  : "${_#* () }"
+  : "${_:4:-2}"
+  _out="$_"
   (($#>1)) || echo "$_out"
 }
 
@@ -46,7 +46,7 @@ User-Script.Shell.function-body () {
 User-Conf.Cache.load-data () {
   [[ -s "${1}" ]] && . "${1}" && {
       ! ((VERBOSE)) || {
-          if_ok "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes)" 1>&2 || : "???"
+          :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes)" 1>&2 || : "???"
       }
   } || ! ((VERBOSE)) || echo "Missing or empty ${1@Q} cache (E$?, ignored)" 1>&2
 }
@@ -56,17 +56,16 @@ User-Conf.Cache.load-maps () {
 : param '~ <Data-file> <Map-exports...>'
 : about 'Helper to retrieve map arrays from Shell cache file'
 : tag cache
-  (($#)) || return ${_E_MA:?};
+  (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Shell script cache file')}"
 : input "${2?$(:argv-err 2 'Associative array name(s)')}"
   declare -gA "${@:2}" || failerr "Cannot declare global maps ${*@Q}" || return
   [[ -s "${1}" ]] && . "${1}" && {
       ! ((VERBOSE)) || {
-          if_ok "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes) for ${*:2}" 1>&2 || : "???";
-          local -n _ref;
-          for _ref in "${@:2}";
-          do
-              [[ ! -n "${_ref[*]:+set}" ]] || echo "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2;
+          :pass "$(du -hs "${1}")" && : "${_%%'	'*}" && echo "Cache loaded ($_ bytes) for ${*:2}" 1>&2 || : "???"
+          local -n _ref
+          for _ref in "${@:2}"; do
+              [[ ! -n "${_ref[*]:+set}" ]] || echo "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
           done
       }
   } || ! ((VERBOSE)) || echo "Missing or empty $1 cache (E$?, ignored)" 1>&2
@@ -115,7 +114,7 @@ else
   printf.line() { printf '%s\\n' "$@"; }
   say@v() { :say-when $VERBOSITY "$1"; }
   functxln() {
-    say@v "${FUNCNAME[1]}: $(TODO "bash call arg inspection for outer function?")";
+    say@v "${FUNCNAME[1]}: $(TODO "bash call arg inspection for outer function?")"
   }
 fi
 printf.lines() {
@@ -129,7 +128,7 @@ printf.lines.array-map.tab() {
   (($#)) || set -- "${!_pfl_arr[@]}"
   for _pfl_k; do
     : "${_pfl_item//$'\n'/$'\n  '}"
-    printf '%s\t%s\n' "$_pfl_k" "${_-NULL}";
+    printf '%s\t%s\n' "$_pfl_k" "${_-NULL}"
   done
 }
 say.err() { :say-when 1 "$1"; }

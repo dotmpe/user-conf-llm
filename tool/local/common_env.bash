@@ -49,10 +49,14 @@ else
   exec {USER_FD}>&2
 fi
 
-: "${_E_continue:=195}"
-: "${_E_next:=196}"
-: "${_E_break:=197}"
-: "${_E_retry:=198}"
+# TODO: use copy from us-core:hook:global
+: env "${_E_GAE:=193}"      "Generic argument error"
+: env "${_E_MA:=194}"       "Arguments expected (missing-arguments) error"
+: env "${_E_continue:=195}"
+: env "${_E_next:=196}"
+: env "${_E_break:=197}"
+: env "${_E_retry:=198}"
+
 
 : "${US_PP_CACHE:=${CACHE_DIR:-.local/cache}}"
 : "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"

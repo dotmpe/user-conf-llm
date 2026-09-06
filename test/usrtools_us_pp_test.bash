@@ -12,6 +12,7 @@ _us_pp_loads() {
 function set_up() {
   pack_pre=usrtools_usrscr
   pack_src=src/$pack_pre/us_pp.inc
+  pack_mod=Pre-Processor
   declare -gn hooks=user_script_cache__hooks
   echo "setting up" >&2
   shopt -s expand_aliases
@@ -26,12 +27,14 @@ function test_us_pp_loads_inc_src() {
 
 function test_us_pp_loads_inc_pre() {
   . $pack_src &&
-  . <(printf '%s\n' "${hooks[global]}" "${hooks[load]}")
+  "$pack_mod" &&
+  ._hooks:global &&
+  ._hooks:load
 }
 
 function test_us_pp_loads_inc_main() {
   . $pack_src &&
-  . <(printf '%s\n' "${hooks[global]}" "${hooks[load]}") &&
+  #. <(printf '%s\n' "${hooks[global]}" "${hooks[load]}") &&
   .run $pack_pre/us_pp.inc
 }
 
