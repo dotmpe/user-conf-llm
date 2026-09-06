@@ -1,3 +1,7 @@
+# Project paths
+pack/
+dist/
+
 # Log, cache and other local, special purpose dirs hidden from SCM et al
 .local/agent
 .local/build
@@ -9,11 +13,8 @@
 .local/var
 # XXX: Not sure where user data could/should live.
 
+# Redo build database
 .redo/
-
-pack/
-dist/
-
 
 # C tags... for generators that don't use already prepared hidden dirs
 .tags
@@ -24,6 +25,7 @@ tags
 
 # Aider's one path that doesn't seem to configure externally?
 .aider.tags.cache.v4
+# .aider/
 
 # Compiled Lua sources
 luac.out

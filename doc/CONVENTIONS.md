@@ -27,6 +27,11 @@ I am developing a generative shell-script system for command-substitution toolin
   With YAML, and includes or search paths for package.yaml or tools.yaml in a compatible format, collecting such file copy/patch/symlink/changeline and ad hoc scripts could be trivial.
   Redo (@config, and other targets) can help apply state from package.yaml as needed and help to achieve that goal of keeping a tidy project and work tree.
 
+In ask mode:
+- Do not restate or paraphrase the question.
+- Only add a brief note if there is a possible mismatch in topic or references.
+- Otherwise answer directly and concisely.
+
 ## Naming conventions
 
 - In general all names should be strict: ``[A-Za-z_][A-Za-z0-9_]*``.

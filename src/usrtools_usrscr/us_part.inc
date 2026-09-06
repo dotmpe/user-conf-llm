@@ -57,6 +57,10 @@ For usage refer to the individual functions.
   TODO "this is just a thin wrapper to OS expand-base for part specific context"
 }
 
+.main() {
+  .part-main "$@";
+}
+
 .part-main() {
 : about 'Resolve and include parts'
 : param '~ [options] <Parts...>'

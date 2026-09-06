@@ -1,17 +1,10 @@
 #!/bin/bash
 
-\builtin . ./common_setup.bash
-shopt -s extdebug expand_aliases
+# XXX: (bbb) harness testrunning docker image config
 
-us-env -R us-env
-declare -gA _os_script_{load,path}
-us_part --hooks:declare,define,init us-term
-: "${usp_opts:=--alias --hooks:declare,define,init --export}"
-
-\builtin . ./common_env.bash
-METADIR=.local
-
-\builtin . ./common-dsl.bash
+scr_pre=tool/local
+\builtin . $scr_pre/common_script.bash
+\builtin . $scr_pre/common-dsl.bash
 
 #us_part $usp_opts --reload uc-loader
 #. <(uc_inc_pre usrtools_usrconf/uc_dckr)
