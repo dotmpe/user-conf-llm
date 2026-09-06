@@ -28,6 +28,11 @@ jobs:
           scr_pre=tool/local
           \builtin . ${scr_pre:?}/ci_run.sh
 
+      - name: Test summary
+        uses: test-summary/action@v2
+        with:
+          paths: .local/build/test-report.xml
+
       - name: Upload coverate to Codecov
         uses: codecov/codecov-action@v5
         with:
