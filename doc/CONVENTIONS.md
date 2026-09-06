@@ -48,12 +48,14 @@ In ask mode:
 
   * `name.tag` and `.name`: Periods mark hidden names or delimit base name from extensions (file name convention). It is commonly associated with name and attribute as well ("dot" paths), for systems that have more symbols and do not need more complex relative path references and name segments.
   * `name/name`: Forward slashes are used for options, alternative sequence notations, but due to URL the most prevalent is probably that of delimiter between elements of a hierarchical or network organisation of nodes (path conventions and URL RFC's).
-  * `name:tag` and `:name`: The colon marks special names, it reminiscent of interactive Vim-mode command input, and in general associated with special expressions.
-  - tag:value references a field 'tag' with a flag or option or some local setting
-  * `name-tag` and `-n`, `-name`: The hyphen marks special names, it has become associated with resources and entities due to early WWW practices but originally reserved for command switches and options. Here, they are reserved for names with several identities at once (command/function/alias/macro) and virtual groups or aliases for concrete things.
+  * `name:tag` and `:name`: The colon marks special names and structure, it reminiscent of interactive Vim-mode command input, and also specifically associated with schema or protocols, prefix names (qnames) and with special expressions in general.
+  * `name-tag` and `-n`, `-name`: The hyphen marks special names, it has become associated with resources and entities due to early WWW practices but originally reserved for command switches and options. A prefix hyphen 'hides' the argument from the other regular arguments; a double hyphen splits argument sequences (argument conventions).
+    Here, they are reserved for names with several identities at once (command/function/alias/macro), or virtual groups or aliases for concrete things.
 
-  - +tag references a project called 'tag'
-  - @tag references a global topic called 'tag'
+  Others:
+
+  - +tag references a project called 'tag', should be used as the home-tag to find the repository for an entity
+  - @tag references a global topic called 'tag'; global means existing in all projects
   - #tag references an unique id in a file or collection
 
 Refer to [MANIFEST.md](MANIFEST.md) for a detailed guide on naming.
@@ -75,18 +77,23 @@ The basic lifecycle is src/ -> pack/ -> dist/.
 
 The source goes into src/ and is standard ("vanilla") Bash compatible, but not in its final Bash form yet.
 
-After preprocessing the source and intermediate is placed in pack/ns0/ initially, where those different pack/ subdirectories indicate other formatting and different name space rules and mappings. To be implemented by a preprocessor with plug-in cores, and other modules to support different methods for naming.
+After preprocessing the source and intermediate is placed in pack/ns0/ initially, where those different pack/ subdirectories indicate other formatting and different name space rules and mappings.
 
-Also after preprocessing, further schema information is extracted about the source. Together with linkml it is the intention to document both the source structure, as well as schema for input/ouput of the scripts, and provide a means to further structure and support work on objects, adding support for instances, validating user data, working with defaults and seed data and establish common as well as specific profiles, etc. etc. etc.
+Also after preprocessing, further schema information is extracted about the source. 
+[TODO] Together with linkml it is the intention to document both the source structure, as well as schema for input/ouput of the scripts, and provide a means to further structure and support work on objects, adding support for instances, validating user data, working with defaults and seed data and establish common as well as specific profiles, etc. etc. etc.
 
-To document the conventions further I need to close the loop, where the names of all calls and organizing elements are indexed and put into directory listings. And those listings (can) then refer to individual schema parts and abstractions.
+To document the conventions further I need to close the loop, where the names of all calls and organizing elements are indexed and put into directory listings. And those listings (can) then refer to individual schema parts and abstractions. See 'building with data' section below.
 
 # Writing tests
 
 - ``bashunit test/`` or specific invocation should test important parts [to be specified].
 
-- ``redo`` "builds" all targets, which are conveniently configured in `.build-select.sh` to `@build @test @pack`.
+- ``redo -k @config all`` "builds" all targets, which are conveniently configured in `.build-select.sh` to `@build @test @pack`.
+
+  Special target `@config` needs be called as the very first (and explicitly), so when using parallel runners (-j<N> option), make sure to run it before.
 
 # Building with data
+
+I'd like to generate documentation, status and other reports from schema + extracted data.
 
 I am close to completing the transform of src/ to pack/ns0/ but that needs to happen first.
