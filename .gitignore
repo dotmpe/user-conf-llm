@@ -6,6 +6,7 @@ dist/
 .local/agent
 .local/build
 .local/cache
+.local/etc
 .local/log
 .local/mnt
 .local/sync
