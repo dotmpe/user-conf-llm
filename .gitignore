@@ -1,3 +1,6 @@
+# Local env seed file
+.env
+
 # Project paths
 pack/
 dist/

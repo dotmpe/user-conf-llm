@@ -21,6 +21,8 @@
 
       aider: 'aider+user'
 
+      build: redo -j10 -k @config all
+
     scripts:
       bashunit+install: |
         { curl -s https://bashunit.com/install.sh | bash; } &&

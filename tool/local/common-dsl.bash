@@ -152,17 +152,18 @@ fi
 
   declare -gA "${@:2}" ||
     :failerr "Cannot declare global maps ${*@Q}" || return
-  [[ -s "${1}" ]] && . "${1}" && {
-      ! ((VERBOSE)) || {
-          :pass "$(du -hs "${1}")" &&
-          : "${_%%'	'*}" &&
-          say.debug "Cache loaded ($_ bytes) for ${*:2}" || : "???"
-          local -n _ref
-          for _ref in "${@:2}"; do
-            [[ ! -n "${_ref[*]:+set}" ]] ||
-              say.v "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
-          done
-      }
+  [[ -s "${1}" ]] &&
+  \builtin . "${1}" && {
+    ! ((VERBOSE)) || {
+      :pass "$(du -hs "${1}")" &&
+      : "${_%%'	'*}" &&
+      say.debug "Cache loaded ($_ bytes) for ${*:2}" || : "???"
+      local -n _ref
+      for _ref in "${@:2}"; do
+        [[ ! -n "${_ref[*]:+set}" ]] ||
+          say.v "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
+      done
+    }
   } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
 

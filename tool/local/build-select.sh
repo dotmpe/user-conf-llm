@@ -18,13 +18,13 @@ scr_pre=tool/local
 case "${XREDO_TARGET}" in @config | @*:config ) ;; ( * )
 
   #\builtin command -v redo-ifdone >/dev/null 2>&1 &&
-  #targets="$(redo-targets)" &&
-  #grep -q '^@config' <<< "$targets" &&
-  if ! redo-ifdone @config; then
+  #if ! >/dev/null 2>&1 redo-ifdone @config; then
+  redo_targets="$(redo-targets)" &&
+  if ! grep -q '^@config' <<< "$redo_targets"; then
       say.err "Must run redo @config first (to build ${XREDO_TARGET@Q})"
       exit 1
   fi ||
-    :ignore :failerr "Warning: Ignored redo-ifdone (targets=${targets@Q})"
+    :ignore :failerr "Warning: Ignored redo-ifdone (targets=${redo_targets@Q})"
 
 esac
 

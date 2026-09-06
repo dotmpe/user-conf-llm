@@ -14,9 +14,10 @@ var=./$VAR/redo_default.bash
   echo "New file $etc" >&2
 }
 
+# Reset caches
 rm -f .local/user/data/*
 
-# TODO: redo -j10 -k @config all
-redo -k @config all
+redo @config
+redo -j10 -k @config all
 
 # Id: ci_run                                       vim:set ft=sh sw=2 sts=2 et:
