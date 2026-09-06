@@ -27,7 +27,7 @@ User-Script.Shell.function-body () {
 : param '<Ref-fun> [<Dest-var>] ...';
 : input "${1?$(:argv-err 1 'Function name expected')}";
   (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out;
-  if_ok "$(typeset -f "$1")" || return;
+  :pass "$(typeset -f "$1")" || return;
   : "${_#* () }";
   : "${_:4:-2}";
   _out="$_";
@@ -299,7 +299,7 @@ User-Script.Shell.variable-type-cache() {
   local -n _sh_vfl='us_shell_tspec["$sym"]'
   for sym; do
     if [[ ! ${_sh_vfl:+set} ]]; then
-      if_ok "$(2>/dev/null declare -p "${sym}")" ||
+      :pass "$(2>/dev/null declare -p "${sym}")" ||
         failerr "E$? getting ${sym@Q} typeset" || return
       : "${_:8}"
       : "${_%% *}"
@@ -314,7 +314,7 @@ User-Script.Shell.variable-type-cache() {
   local -n __arr_in=${1}
   local -n __arr_out=${2:-$1}
   IFS=$'\n'
-  if_ok "$(<<<"${__arr_in[*]}" sort)" && mapfile -t ${!__arr_out} <<< "$_"
+  :pass "$(<<<"${__arr_in[*]}" sort)" && mapfile -t ${!__arr_out} <<< "$_"
   IFS=$' \t\n'
 }
 
