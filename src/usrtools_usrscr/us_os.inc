@@ -31,8 +31,7 @@ Operating-System() {
 .lookup-append() {
 : about "Simple PATH-var helper to append only new, unique instance"
 : param "<Directory ...> [<Var=PATH>]"
-: extended "Using this helps keeping PATH cleaner, but it doesnt behave \
-      like \path_append but returns false (1) if already found"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave like \path_append but returns false (1) if already found"
 : notes TODO "Really should write sys-wordv-add or something"
 : notes "This does not export the variable"
 : notes "This requires the variable name, use _OS_Path_* alternatively"
@@ -58,8 +57,7 @@ Operating-System() {
 .path-append() {
 : about "Simple PATH helper to append only new, unique instance"
 : param "<Directory ...> [<Var=PATH>]"
-: extended "Using this helps keeping PATH cleaner, but it doesnt behave \
-      like \path_append but returns false (1) if already found"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave like \path_append but returns false (1) if already found"
 : notes TODO "Really should write sys-wordv-add or something"
 : notes "This does not export PATH"
 : notes "This does not require explicit PATH name for single dir argument, and last argument can always be left empty for default"

@@ -69,22 +69,22 @@ For usage refer to the individual functions.
 : param '~ ... --hooks:<names,>'
 : env DEBUG DIAG
 : man '~ is an rudimentary argument parser followed by a load/cache/option loop
-over source part names.
+  over source part names.
 
-Tasks:
-1. lookup and resolve for name and id, and using regular path lookup and pattern mapping
-2. record the one found name-to-id as a group sharing declared prefix <pre>; and
-3. save the found state in a part cache function (with header copy, kept outside the source)
-4. run each option: grp, var, ssc, als
+  Tasks:
+  1. lookup and resolve for name and id, and using regular path lookup and pattern mapping
+  2. record the one found name-to-id as a group sharing declared prefix <pre>; and
+  3. save the found state in a part cache function (with header copy, kept outside the source)
+  4. run each option: grp, var, ssc, als
 
-For details on schema read the us_part linkml specification.
+  For details on schema read the us_part linkml specification.
 
-~ is a core routine, that depends on other core parts:
+  ~ is a core routine, that depends on other core parts:
 
-User-Script.resolve-name
-User-Script.OS.source-once
-User-Script.Scripting.inline-callbacks  # combine ssc/als and funbody inline
-'
+  User-Script.resolve-name
+  User-Script.OS.source-once
+  User-Script.Scripting.inline-callbacks  # combine ssc/als and funbody inline
+  '
 : alias us-part
   local simple=0 init=0 reinit=0 reload=0 export=0 alias=0 dump=0 hooks pathvar
   local -a load_scripts
@@ -269,7 +269,7 @@ User-Script.Scripting.inline-callbacks  # combine ssc/als and funbody inline
 }
 
 .resolve-name() {
-: param ' ~ <Name> <Dest-Var> <Id-var> <Exts...>'
+: param '~ <Name> <Dest-Var> <Id-var> <Exts...>'
 : input "${1?$(:argv-err 1 'Name value')}"
 : input "${2?$(:argv-err 2 'Path dest var name')}"
 : input "${3?$(:argv-err 3 'Id dest var name')}"

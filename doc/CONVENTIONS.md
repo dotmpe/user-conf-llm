@@ -1,6 +1,7 @@
 # Project conventions
 
-I am developing a generative shell-script system for command-substitution tooling (User-Scripts). I want rich prose documentation, explicit schemas for the generative parts, and a path toward using Lua for data, heuristics, rules, testing, and diagnostics. Help me explore the design space, propose schemas, and produce both explanatory text and concrete Bash (and later Lua) artifacts.
+Preamble:
+: I am developing a generative shell-script system for command-substitution tooling (User-Scripts). I want rich prose documentation, explicit schemas for the generative parts, and a path toward using Lua for data, heuristics, rules, testing, and diagnostics. Help me explore the design space, propose schemas, and produce both explanatory text and concrete Bash (and later Lua) artifacts.
 
 ## Getting started
 
@@ -36,14 +37,21 @@ In ask mode:
 
 - In general all names should be strict: ``[A-Za-z_][A-Za-z0-9_]*``.
 - Directories, file names, functions and variable names, all follow the strict rule, with some specific exceptions made on purpose.
-- Filenames follow standard rules. They can one or more .ext tags, denoting format, encoding, etc. And they must have at least one.
-- Other characters are special, but sometimes permissible. Hyphens are specifically included in names to signal a special status.
+- Filenames follow standard rules. They can have one or more .ext tags, denoting format, encoding, etc. They must have at least one name extension.
+  Period-prefixed names (dotnames or dotfiles) are \* nix-style hidden files and must be used as an alternative name only;
+  they must not be used to duplicate file names and keep both copies, only one should exist at any one time.
+- Other characters are special, but sometimes permissible.
+
+  - Hyphens are specifically included in names to signal a special status.
+  - Leading underscore are to emphasize them among or keep them distinct from others.
+    Underscore-prefixing can be used to insert 'override' names sometimes, where two copies of the same name exist with the prefixed name having override status.
+
 * Not having unified name spaces and binding means \*nix-line OS resort to PATH-like schemes for lookup,
   which may result in "shadow" names (those masked from lookup by being ordered after another directory holding identical names).
 * Proper organisation of files names is described in the LHS, with projects mirroring those parts that are relevant (src, lib, etc) in the internal work tree.
-  package.yaml would be the obvious place to document file tree conventions as well as other naming systems.
+  TODO: package.yaml would be the obvious place to document file tree conventions as well as other naming systems.
 * Exact name formats for functions is yet to be established, and based on above considerations.
-  And as separate profiles or name spaces, to-be specified by probably package.yaml combined with linkml schema.
+  TODO: And as separate profiles or name spaces, to-be specified by probably package.yaml combined with linkml schema.
 - Since I am interested in continuing certain conventional notations here follow the most used ASCII characters.
 
   * `name.tag` and `.name`: Periods mark hidden names or delimit base name from extensions (file name convention). It is commonly associated with name and attribute as well ("dot" paths), for systems that have more symbols and do not need more complex relative path references and name segments.

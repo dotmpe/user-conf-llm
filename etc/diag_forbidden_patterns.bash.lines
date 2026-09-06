@@ -1,6 +1,8 @@
 #shellcheck disable=2288
 # Explicit escapes on trailing-; if they must be used
 '[^;\\];$'
+# Consider writing to USER_FD or making another channel
+#'>&2 '
 # All of these must have [:._] prefix or use escape as well
 '[^\\:._\]]pass\>'
 '[^\\:._\]]ignore\>'

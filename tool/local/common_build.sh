@@ -7,19 +7,20 @@
   # themselves must (in general) be kept as config (elsewhere).
   redo-ifchange etc/diag_forbidden_patterns.bash.lines &&
   :pass "$(< $_ )" &&
-  . <(printf "forbidden=(\m%s\n)" "$_") &&
+  \builtin . <(printf "forbidden=(\m%s\n)" "$_") &&
   [[ ${forbidden[*]:+set} ]] ||
     :failerr "No forbidden patterns configured" || return
 
   # Search (grep) file for certain expressions, warn about match(es)
   for x in "${forbidden[@]}"; do
-    grep -HPn "^[^#:]*$x" "$script" >&2 || continue
+    :to-v grep -HPn "^[^#:]*$x" "$script" || continue
     :failerr "Found forbidden ${x@Q}, see before lines" || return
   done
 }
 
 :uc-diag:shell-lint-check() {
-  ( \builtin . "$script" ) || :failerr "Loading ${script@Q}" || return
+  ( \builtin . "$script" ) ||
+    :failerr "E$? on test-loading ${script@Q}" || return
   \builtin command shellcheck "$script" >&2 &&
   say.v "Load and shellcheck passed for ${script@Q}"
 }
@@ -38,7 +39,7 @@
     :failerr "No cmds configured" || return
 
   :pass "$(IFS='|'; echo "${cmds[*]}")" &&
-  grep -HPn "^[^#:]*(?<!\\\bbuiltin[ \t])(?<!\\\)\b(${_:?})\b" -- "$script" >&2 ||
+  :to-v grep -HPn "^[^#:]*(?<!\\\bbuiltin[ \t])(?<!\\\)\b(${_:?})\b" -- "$script" ||
     return 0
   :failerr "Found unguarded tooling invocation(s), see before lines"
 }
@@ -49,9 +50,10 @@
 
 :xredo-check-recipe() {
   local diag script
-  : "${XREDO_TARGET#@check:}"
-  IFS=: read -r script diag <<<"${_}"
-  redo-ifchange "$script"
+  : "${XREDO_TARGET#@check:}"; IFS=: read -r script diag <<<"${_}" &&
+  : "${script:?$(:unset-err script 'Input source file')}"
+
+  redo-ifchange "$script" &&
   # TODO: act on and handle $diag setting
   case "$script" in
 
@@ -61,13 +63,14 @@
       :uc-diag:shell-lint-check
     ;;
 
-  ( *.do | tool/* )
+  ( *.do | tool/local/common* )
+      :uc-diag:shell-lint-check &&
       :uc-diag:forbidden-patterns &&
       #:uc-diag:unguarded-tooling-invocations &&
-      : #:uc-diag:todo-comments
+      : # :uc-diag:todo-comments
     ;;
 
-  ( src/* | test/* )
+  ( src/* | test/* | tool/* )
       :uc-diag:forbidden-patterns &&
       : #:uc-diag:todo-comments
     ;;
@@ -103,7 +106,7 @@
     targets+=( "@index:${src:?}" )
     targets+=( "pack/ns1/${src%.inc}.bash" )
   done &&
-  #>&2 :dump-pretty-globals sources targets &&
+  #:to-v :dump-pretty-globals sources targets &&
   redo-ifchange ${scr_pre:?}/build-select.sh "${sources[@]}" "${targets[@]}"
 }
 
@@ -123,7 +126,7 @@
         say.err "config: Local tool path exists: ${scr@Q} (ignored)"
         continue
       fi
-      >&2 ln -sv "$tool" ${tool##*/} || return
+      :to-v ln -sv "$tool" ${tool##*/} || return
     fi
   done
 

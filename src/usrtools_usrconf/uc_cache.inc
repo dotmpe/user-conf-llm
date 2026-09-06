@@ -18,7 +18,7 @@ Cache() {
   ! [[ ${UCACHE:+set} ]] || {
     test -d "$HOME/.local/var/uc/cache" && UCACHE=$_
     test -d "$HOME/.cache/local/uc" && UCACHE=$_
-    test -d "$UCACHE" || >&2 mkdir -vp "$UCACHE"
+    test -d "$UCACHE" || :to-v mkdir -vp "$UCACHE"
   }
 }
 
@@ -62,21 +62,19 @@ Cache() {
 
 .load-file() {
 : param '~ <Data-file> ...'
-: tag util aux
+: tag util aux cache
 : TODO: "move this to uc-meta to make it work more clearly, but until then need this as user helper"
   (($#)) || return ${_E_MA:?}
 : input "${1?$(:argv-err 1 'Data file')}"
+
   [[ -s "${1}" ]] &&
   \builtin . "${1}" && {
     ! ((VERBOSE)) || {
-      # Print summary of loaded bytes/items
-      :pass "$(du -hs "${1}")" &&
-      : "${_%%$'\t'*}" &&
-      >&2 echo "Cache loaded ($_ bytes)" || : "???"
+      # Print summary of loaded bytes
+      :pass "$(du -hs "${1}")" && : "${_%%[$'\t	']*}" &&
+      say.debug "Cache loaded ($_ bytes)" || :
     }
-  } ||
-    ! ((VERBOSE)) ||
-      >&2 echo "Missing or empty ${1@Q} cache (E$?, ignored)"
+  } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
 
 .load-maps() {
@@ -85,22 +83,22 @@ Cache() {
 : tag cache
 : input "${1?$(:argv-err 1 'Shell script cache file')}"
 : input "${2?$(:argv-err 2 'Associative array name(s)')}"
+
   declare -gA "${@:2}" ||
     :failerr "Cannot declare global maps ${*@Q}" || return
   [[ -s "${1}" ]] &&
   \builtin . "${1}" && {
     ! ((VERBOSE)) || {
       # Print summary of loaded bytes/items
-      :pass "$(du -hs "${1}")" &&
-      : "${_%%$'\t'*}" &&
-      say.info "Cache loaded ($_ bytes) for ${*:2}" || :
+      :pass "$(du -hs "${1}")" && : "${_%%[$'\t	']*}" &&
+      say.debug "Cache loaded ($_ bytes) for ${*:2}" || :
       local -n _ref
       for _ref in "${@:2}"; do
         [[ ! "${_ref[*]:+set}" ]] ||
-          say.v "Found ${#_ref[@]} ${!_ref} items in cache"
+          say.info "Found ${#_ref[@]} ${!_ref} items in cache"
       done
     }
-  } || say.err "Missing or empty $1 cache (E$?, ignored)"
+  } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
 
 .rekey-maps() {
@@ -149,7 +147,7 @@ Cache() {
   local file=${1} sym uc_cache_{fields,source,name{ref,key}s,srcsyms}
   ..Object.declare uc_cache \$sym source &&
   \builtin . <(echo "local -n ${uc_cache_namerefs[*]:?}") &&
-  to-v declare -p uc_cache_{fields,source,name{ref,key}s,srcsyms} &&
+  :to-v declare -p uc_cache_{fields,source,name{ref,key}s,srcsyms} &&
   .load-maps "$UC_CACHE_STATE" "${uc_cache_srcsyms[@]:?}" || return
   shift
   for sym; do

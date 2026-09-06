@@ -8,5 +8,11 @@ scr_pre=tool/local
 
 :cache-loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
 
-printf.lines.array-map.tab us_pp_name_map
-#printf.lines.array-map.tab us_pp_meta_static
+case "${1:-srcmap}" in
+( srcmap ) printf.lines.array-map.tab us_pp_name_map ;;
+( meta-static ) printf.lines.array-map.tab us_pp_meta_static ;;
+( * )
+    : "${1:?$(:argv-err 1 'Entry point')}"
+    : "${_@Q}? unknown entry point"
+    :failerr "$_, ${0##*/}"
+esac

@@ -4,10 +4,10 @@
 # Distributed under terms of the MIT license.
 
 if [[ ${0##*/} = common-dsl.bash ]]; then
-  \builtin . ./common_setup.bash
-  \builtin . ./common_env.bash
-  shopt -s expand_aliases
-  shopt -s extdebug
+  scr_pre=tool/local
+  \builtin . ${scr_pre:?}/common_setup.bash
+  shopt -s extdebug expand_aliases
+  \builtin . ${scr_pre:?}/common_env.bash
 fi
 
 :-() {
@@ -69,7 +69,7 @@ fi
 : name User-Script.OS.path-append
 : about "Simple PATH helper to append only new, unique instance"
 : param "<Directory ...> [<Var=PATH>]"
-: extended "Using this helps keeping PATH cleaner, but it doesnt behave       like path_append but returns false (1) if already found"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave like \path_append but returns false (1) if already found"
 : notes TODO "Really should write sys-wordv-add or something"
 : notes "This does not export PATH"
 : notes "This does not require explicit PATH name for single dir argument, and last argument can always be left empty for default"
@@ -84,7 +84,7 @@ fi
 : name User-Script.OS.lookup-append
 : about "Simple PATH-var helper to append only new, unique instance"
 : param "<Directory ...> [<Var=PATH>]"
-: extended "Using this helps keeping PATH cleaner, but it doesnt behave       like path_append but returns false (1) if already found"
+: extended "Using this helps keeping PATH cleaner, but it doesnt behave like \path_append but returns false (1) if already found"
 : notes TODO "Really should write sys-wordv-add or something"
 : notes "This does not export the variable"
 : notes "This requires the variable name, use _OS_Path_* alternatively"
@@ -128,18 +128,23 @@ fi
 }
 
 :cache-load () {
-: name User-Conf.Cache.load-data
-: tag cache
+: param '~ <Data-file> ...'
+: name User-Conf.Cache.load-file
+: tag util aux cache
   (($#)) || return ${_E_MA:?}
+: input "${1?$(:argv-err 1 'Data file')}"
 
   [[ -s "${1}" ]] &&
   \builtin . "${1}" && {
     ! ((VERBOSE)) || {
-      :pass "$(du -hs "${1}")" && : "${_%%'	'*}" &&
-      say.debug "Cache loaded ($_ bytes)" 1>&2 || : "???"
+      :pass "$(du -hs "${1}")" && : "${_%%[$'\t	']*}" &&
+      say.debug "Cache loaded ($_ bytes)" || :
     }
   } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
+
+:isfun User-Conf.Cache.load-data ||
+User-Conf.Cache.load-data() { .load-file "$@"; }
 
 :cache-loadmaps () {
 : name User-Conf.Cache.load-maps
@@ -152,16 +157,16 @@ fi
 
   declare -gA "${@:2}" ||
     :failerr "Cannot declare global maps ${*@Q}" || return
-  [[ -s "${1}" ]] &&
+  [[ -x "${1}" ]] &&
   \builtin . "${1}" && {
     ! ((VERBOSE)) || {
-      :pass "$(du -hs "${1}")" &&
-      : "${_%%'	'*}" &&
-      say.debug "Cache loaded ($_ bytes) for ${*:2}" || : "???"
+      # Print summary of loaded bytes/items
+      :pass "$(du -hs "${1}")" && : "${_%%[$'\t	']*}" &&
+      say.debug "Cache loaded ($_ bytes) for ${*:2}" || :
       local -n _ref
       for _ref in "${@:2}"; do
         [[ ! -n "${_ref[*]:+set}" ]] ||
-          say.v "Found ${#_ref[@]} ${!_ref} items in cache" 1>&2
+          say.info "Found ${#_ref[@]} ${!_ref} items in cache"
       done
     }
   } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
@@ -188,7 +193,7 @@ fi
   printf '%s: %s %s%s%s\n' "$@"
 }
 
-to-v() {
+:to-v() {
 : about 'Put output on USER output (regardless of verbosity)'
 : param '~ <...>'
 : tag dev
@@ -457,17 +462,24 @@ User-Script.Shell.variable-type-cache() {
   local sym=${1:?} assoc=0
   local -n _sh_vfl='us_shell_tspec["$sym"]'
   [[ $_sh_vfl == -A ]] && assoc=1 ||
-  [[ $_sh_vfl == -a ]] || say.err "Not an array ${sym@Q}" || return
+  [[ $_sh_vfl == -a ]] ||
+    :failerr "$FUNCNAME: Not an array ${sym@Q}" || return
   local -n value=$sym'["$key"]' input=$sym
+  [[ "${input[*]:+set}" ]] ||
+    :failerr "$FUNCNAME: Empty input array ${sym@Q}" || return
   local key{,s} output
-  printf -v output 'declare -gA %s=(\n' "$sym"
+  ((assoc)) && : A || : a
+  printf -v output 'declare -g%s %s=(\n' "$_" "$sym"
   if [[ ${sym[*]:+set} ]]; then
     keys=( "${!input[@]}" )
     # FIXME: sort is for dictionary (assoc arrays)
     ! ((assoc)) || :sort-array keys
     for key in "${keys[@]}"; do
+      [[ "${value:+set}" ]] ||
+        :failerr "Empty value in array ${sym@Q} at key ${key@Q}" || return
+
       : "${value@Q}"
-      : "${_//'\n'/$'\n'}"
+      #: "${_//'\n'/$'\n'}"
       ((assoc)) &&
         output+="  [\"$key\"]=${_:?}"$'\n' ||
         output+="  [$key]=${_:?}"$'\n'
@@ -476,44 +488,49 @@ User-Script.Shell.variable-type-cache() {
   output+=')'
   printf '%s\n' "$output"
 }
+
 :dump-pretty-globals() {
-  local sym
-  local -n _sh_vfl='us_shell_tspec["$sym"]'
-  for sym; do
-    User-Script.Shell.variable-type-cache "$sym" &&
+: about 'Helper to make readable, formatted variable dumps'
+: param '~ <Vars...>'
+: completion 'complete -A variable -A arrayvar'
+: input "${*:?$(:argv-err \* 'Variable name(s)')}"
+  local var als
+  local -n _sh_vfl='us_shell_tspec["$var"]'
+
+  for var; do
+    case "$var" in ( *:* ) als=${var#*:} var=${var%:*};; ( * ) als=; esac
+    User-Script.Shell.variable-type-cache "$var" &&
     case "$_sh_vfl" in
-    ( -[Aa] ) :dump-pretty-global-array "$sym" ;;
-    ( * ) :failerr "TODO: dump pretty ${sym@Q}" || return
-    esac || :failerr "E$? making pretty dump for ${sym@Q}" || return
+    ( -[Aa] ) :dump-pretty-global-array "$var" ;;
+    ( * ) :failerr "TODO: dump pretty ${var@Q}" || return
+    esac || :failerr "E$? making pretty dump for ${var@Q}" || return
   done
 }
 
 ..Namespace.map-to-ns1() { .map-to-ns1 "$@"; }
 
 ..String.join-array() { .join-array "$@"; }
+
 ..Shell.dump-globals() { .dump-globals "$@"; }
 
-:isfun User-Conf.Cache.load-data ||
-User-Conf.Cache.load-data() { .load-file "$@"; }
-
 ..Operating-System.path-append() { :path-append "$@"; }
-:isfun User-Script.Operating-System.path-append ||
-User-Script.Operating-System.path-append() { :path-append "$@"; }
+# :isfun User-Script.Operating-System.path-append ||
+# User-Script.Operating-System.path-append() { :path-append "$@"; }
 
 
 if [[ ${0##*/} = common-dsl.bash ]]; then
 
   myArgsRead() {
     :read-args 'myArgsRead{A,B}' "$@"
-    declare -p myArgsRead{A,B}
+    :to-v declare -p myArgsRead{A,B}
   }
   myArgsCopy() {
     :copy-args 'myArgsCopy{A,B}' "$@"
-    declare -p myArgsCopy{A,B}
+    :to-v declare -p myArgsCopy{A,B}
   }
   myArgsBind() {
     :bind-args 'myArgsBind{A,B}' "$@"
-    declare -p myArgsBind{A,B}
+    :to-v declare -p myArgsBind{A,B}
   }
 
   exec {USER_FD}>&2
@@ -523,9 +540,9 @@ if [[ ${0##*/} = common-dsl.bash ]]; then
   myArgsCopy myArgsRead{A,B}
   myArgsBind myArgsCopy{A,B}
 
-  declare -F :read-args
-  declare -f :read-args
-  declare -f myArgsRead
+  :to-v declare -F :read-args
+  :to-v declare -f :read-args
+  :to-v declare -f myArgsRead
 fi
 
 # Id: common-dsl                                 vim:set ft=bash sw=2 sts=2 et:

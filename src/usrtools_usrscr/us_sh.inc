@@ -57,8 +57,8 @@ Shell() {
 .dump-push() {
 : input "${*:?$(:argv-err \* 'Variable name(s)')}"
   local var
-  for var
-  do
+
+  for var; do
     :pass "$(declare -p $var)" &&
     : "${_#"declare -"[aA]" $var="}" &&
     echo -e "$var+=(\n  ${_:1: -1}\n)"
@@ -74,6 +74,7 @@ Shell() {
 : completion 'complete -A variable -A arrayvar'
 : input "${*:?$(:argv-err \* 'Variable name(s)')}"
   local var als
+
   for var; do
     case "$var" in ( *:* ) als=${var#*:} var=${var%:*};; ( * ) als=; esac
     :pass "$(declare -p $var)" &&
@@ -89,6 +90,7 @@ Shell() {
 : input "${1:?$(:argv-err 1 'Shell string')}"
 : input "${2:?$(:argv-err 2 'Array variable name')}"
 : completion 'complete -A arrayvar'
+
   #shellcheck disable=2162   # read without -r
   :pass "$(\builtin eval "echo $1")" &&
   <<< "${_}" read -a ${2:?}

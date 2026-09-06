@@ -133,7 +133,7 @@ that an actual line can be re-read from it. '
   inline ___=._run-common+startup; inline-fun
   ._source "$1" || return
 
-  while :; do
+  while ((1)); do
 
     if [[ -z ${us_pp_line:+set} || ${us_pp_retry:-0} -eq 1 ]]; then
       ._read-line us_pp_line ${us_pp_line:+1} || {
@@ -141,7 +141,7 @@ that an actual line can be re-read from it. '
         (( st == _E_break )) && break
         (( st == _E_next  )) && continue
         : "$us_pp_lnr"; (( _ == us_pp_srclnr )) || : "$_:$us_pp_srclnr"
-        failerr "At $_ while trying to read $us_pp_input" $st || return
+        :failerr "At $_ while trying to read $us_pp_input" $st || return
       }
       ((${us_pp_retry:-0})) && us_pp_retry=0 || ((us_pp_lnr+=1))
     fi
@@ -155,7 +155,7 @@ that an actual line can be re-read from it. '
       (( st == _E_retry    )) && { us_pp_retry=1; continue; }
       (( st == _E_next     )) && handled=0 || {
         : "$us_pp_lnr"; (( _ == us_pp_srclnr )) || : "$_:$us_pp_srclnr"
-        failerr "At $_ ${us_pp_line@Q}" $st || return
+        :failerr "At $_ ${us_pp_line@Q}" $st || return
       }
     }
 
@@ -174,22 +174,23 @@ that an actual line can be re-read from it. '
     say.err "Closing ${#us_pp_input_stack[*]} remaining unread inputs"
     local fd
     for fd in "${us_pp_input_stack[@]}"; do
-      exec {fd}<&- || _ failerr "closing FD $fd (ignored)"
+      exec {fd}<&- || say.err "E$? closing FD $fd (ignored)"
     done
   fi
 
   if ((DEBUG)); then
     # Peek at results
     # TODO: sort tables at output
-    to-v printf.lines.array-map.tab us_pp_name_map
-    to-v printf.lines.array-map.tab us_pp_meta_static
+    :to-v printf.lines.array-map.tab us_pp_name_map
+    :to-v printf.lines.array-map.tab us_pp_meta_static
   fi
 
   # TODO: manage state per source
   #cache_dumpmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]}"
+
   >| "${US_PP_STATE:?}" \
-  :dump-pretty-globals us_pp_{name_map,meta_static}
-  #..Shell.dump-globals us_pp_{name_map,meta_static}
+  ..Shell.dump-globals us_pp_{name_map,meta_static}
+  #:dump-pretty-globals us_pp_{name_map,meta_static}
 }
 
 ._run-common+startup() {
