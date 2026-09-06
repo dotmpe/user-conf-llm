@@ -167,12 +167,17 @@
   export -f "${us_bbb_specials[@]:?}" ||
     say.err "Failed at loading specials" || return
 
+  #shellcheck disable=2295
   tests=( test/"${modid:?}"_test.* ) &&
   redo-ifchange @test:config "${tests[@]}" &&
+  testid=$(sha256sum < <(printf '%s\n' "${tests[@]}")) &&
+  : $'[\t ]' &&
+  testid=${testid%%$_*} &&
+  >&2 declare -p testid &&
   mkdir -p .local/build &&
   \builtin command bashunit \
     --env test/_test_bootstrap.sh \
-    --log-junit .local/build/test-report.xml \
+    --log-junit .local/build/test-report-$testid.xml \
     --coverage --coverage-min 80 \
     "${tests[@]}" >&2
 }
