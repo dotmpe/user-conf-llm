@@ -32,13 +32,17 @@ Preamble:
 * This document is one of several CONVENTIONS*md files, found at ``doc/`` for several projects. It is the primary project file for guidance and LLM/agentic interactions, of which we see two or more modes:
 
   - 'Full edit' or a "coding" mode, where file updates are given.
-  - And a conversation-restricted 'ask' mode with output restricted to answers.
+  - A conversational 'ask' mode with output restricted to examples and answers.
 
   In ask mode:
 
     - Do not restate or paraphrase the question.
     - Only add a brief note if there is a possible mismatch in topic or references.
     - Otherwise answer directly and concisely.
+
+  In coding mode:
+
+    - Ensure to summarize steps or actions in the answer before the actual edits.
 
   The CONVENTIONS document shares several parallel copies. These keep versions and editions with changes that do not fit-in with the internal structure well; the copies help to keep easy to compare parallel versions, sharing certain stanza's and overall structure while allowing to focus convention editions on a particular project and/or restricted to a specific stage and task.
 
@@ -52,7 +56,7 @@ Preamble:
 
 - In general all names should be strict: ``[A-Za-z_][A-Za-z0-9_]*``.
 - Directories, file names, functions and variable names, all follow the strict rule, with some specific exceptions made on purpose.
-- Filenames follow standard rules. They can have one or more .ext tags, denoting format, encoding, etc. They must have at least one name extension.
+- Filenames follow standard rules. They can have one or more .ext tags, denoting format, encoding, etc. They should have at least such extension.
   Period-prefixed names (dotnames or dotfiles) are \* nix-style hidden files and must be used as an alternative name only;
   they must not be used to duplicate file names and keep both copies, only one should exist at any one time.
 - Other characters are special, but sometimes permissible.
@@ -83,26 +87,31 @@ Preamble:
 
 Refer to [MANIFEST.md](MANIFEST.md) for a detailed guide on naming.
 
-# Code Structure
+## Code Structure
 
 - Organize scripts with function definitions at the top and a main execution block at the bottom.
 
   For shell scripts with executable function, it makes sense to finish shell mode changes (flags, options) before the function definitions (and initial imports).
 
-- Function definitions are ordered alphabetically in general, but depending on the file. They are grouped in two sets usually, main and util but ad hoc organisations are possible.
+- Function definitions are ordered alphabetically in general, but depending on the file.
+  They are grouped in two sets usually, main and util but ad hoc organisations are possible.
 
   Certain definitions can be important in shell script file formats, those
   should appear at one established and so recognisable order.
 
-# Writing scripts
+## Writing scripts
 
-* The intent is to finally deploy scripts that offer a good degree of confidence, and control, of the intended host/session interaction. But also to write succinct, and idiomatic (Bash 4.3+). Pre-processing will be deployed to reach these goals (`us-pp` module and command script).
+* The intent is to finally deploy scripts that offer a good degree of confidence, and control, of the intended host/session interaction.
+  But also to write succinct, and idiomatic (Bash 4.3+).
+  Pre-processing will be deployed to reach these goals (`us-pp` module and command script).
 
-  Currently there are two main context to consider for source: executable script, and parts. Part or part-groups (found at ``tool/*/part`` and/or in ``.group.bash``) have long function names, and the executable context uses a loader with optional exports, and aliases and name-wrapping for functions (not real Bash aliases, just optional/alternative functions generated on load).
+  Currently there are two main context to consider for source: executable script, and parts.
+  Part or part-groups (found at ``tool/*/part`` and/or in ``.group.bash``) have long function names, and the executable context uses a loader with optional exports, and aliases and name-wrapping for functions (not real Bash aliases, just optional/alternative functions generated on load).
 
   All current parts are fully usable (through part and handler from ``us-part`` group), but ``us-pp`` has yet to build that into a proper ``us-pp`` module+command script.
 
-- Shells have a complex interaction of run-time mode, script and host. Scripts should run in strict environments but be lenient depending on context, while functions may demand strict modes/environment/etc.
+- Shells have a complex interaction of run-time mode, script and host.
+  Scripts should run in strict environments but be lenient depending on context, while functions may demand strict modes/environment/etc.
 
   * For that reason, (for now) it makes sense to use \ (backslash escaping) and ``builtin`` (to defeat aliasing and function name "shadowing" the actual command), beside the ``command``- builtin (to default both), to **guard** *shell invocations* in case of unstrict/name-aliasing modes. For awareness, ``eval``, ``.``/``source``, and ``read*``-variants are normally "guarded" by `\builtin` until context can be validated and satisfied explicitly.
     (NB. Strictly speaking, there is no reason to also "guard" local, declare, and all builtins, other than that this would be too noisy at this stage.)
@@ -143,22 +152,22 @@ Still.Long.Name.Space.Prefix.MyFun() {
 
 * Build generates pre-distributable scripts into ``pack/ns...`` directories from source, where the ns0 and other indicate well defined formats.
 
-  Local tooling live almost exclusively in ``tool/*/...`` where the asterisk stands-in for a globally defined suite or may be a language like "bash".
+- Local tooling live almost exclusively in ``tool/*/...`` where the asterisk stands-in for a globally defined suite or may be a language like "bash".
   ("tool/local" is a convenient root to tuck away any project specific scripts including Bash but without considering global or shared paths at all.)
 
-  Other resources and dotfiles are configured as far as possible to be in etc/, var/, lib/, etc.
+- Other resources and dotfiles are configured as far as possible to be in etc/, var/, lib/, etc.
 
-  For files that do not check in, use the .local/{etc,var,...} prefix. The .local/user is specifically to keep local user config and state.
+- For files that do not check in, use the .local/{etc,var,...} prefix. The .local/user is specifically to keep local user config and state.
 
-  For cache and build, use .local/{cache,build} for local and prefer global paths. For those paths prefer to use additional subdirectories, per script or session or task, to make management easier. Do not put state information in cache, it must be regenerative and safe to be deleted without breaking the current project stage.
+- For cache and build, use .local/{cache,build} for local and prefer global paths. For those paths prefer to use additional subdirectories, per script or session or task, to make management easier. Do not put state information in cache, it must be regenerative and safe to be deleted without breaking the current project stage.
 
 * To list sources and targets *and* access their state externally, we use a modified redo (fork at dotmpe/redo, v0.42d+) for an ifdone command implementation. Succinctly put, the command ``redo-ifdone <target>`` makes an early non-zero exit unless the entire target branch is up-to-date. So when writing recipes (e.g. Bash, run on redo), this enables a way to cancel an invocation as invalid, and without cascading the build and explicit linking that state as prerequisite to the current (like redo-ifchange would, after executing the recipe and the rest of the branch). Simply put, it allows to say the recipe script state *could* not be valid/verified until ``<target>`` is finished, then it must restart *again* but it can not be resumed by redo. (Something redo does not capture well, is its internal--or layered-on interpreters--state. Cf. when ``*.do`` is generated from ``*.do.do``, it does not update because it does not know what makes sense perhaps, or perhaps pre-emptively by the author as an edge-case exception to be mitigated/worked around. Nb. using directories as build targets is an unbehaving edge case as well.)
 
   This is an addition, but serves two important purposes: it enables external integration of redo state (fail early and without any dynamic state revalidation or build cascading), and more extensive control of recipe flow wrt. target state, adding distinct bounds to the normally single unified redo state, as normally associated with project lifecycle phases or parallel setups (e.g. dev vs translation environments) as well as generative coding setups (e.g. ``*.do.do``).
 
-# Project flow
+## Project flow
 
-- The basic lifecycle is src/ -> pack/ -> dist/.
+- The basic lifecycle is src/ -> pack/ -> dist/, aided by configurable cache, build, config and other lookup/include paths.
 
 - After preprocessing the source and intermediate is placed in pack/ns0/ initially, where those different pack/ subdirectories indicate other formatting and different name space rules and mappings.
 

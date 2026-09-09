@@ -24,6 +24,8 @@
       build: redo -j10 -k @config all
 
     scripts:
+      linkml+install: pipx install linkml
+
       bashunit+install: |
         { curl -s https://bashunit.com/install.sh | bash; } &&
         sudo mv -v lib/bashunit /usr/local/bin/ &&

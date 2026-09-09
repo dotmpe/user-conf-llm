@@ -16,9 +16,10 @@ xredo_build_targets=( @build:ns1 @build:schema )
 " > "$etc"
   echo "New file $etc" >&2
 }
+export REDO_ALL=set
 
-# Reset caches
-rm -f .local/user/data/*
+# Reset caches including user-data state (for now.. TODO: CI build env finetune)
+rm -f .local/build/ .local/cache/ .local/user/data/
 
 redo @config
 redo -j10 -k @config all
