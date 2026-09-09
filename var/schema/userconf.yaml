@@ -1,0 +1,37 @@
+---
+id: http://wtwta.org/project/user-conf
+#id: http://wtwta.org/project/user-conf-repo
+name: user-conf
+imports:
+  - linkml:types
+prefixes:
+  linkml: https://w3id.org/linkml/
+  userconf: http://wtwta.org/project/user-conf#
+
+default_prefix: userconf
+default_range: string
+
+classes:
+  User:
+  Part:
+    attributes:
+      pre: { }
+      var: { }
+      fun: { }
+      als: { }
+      ssc: { }
+      hooks: { }
+      funs: { }
+  Package:
+    attributes:
+      sh: { }
+      json: { }
+      dir: { }
+      tools: { }
+      envd: { }
+      scripts: { }
+
+#enums:
+#slots:
+
+# userconf_schema.yml @linkml [2026-07-21]

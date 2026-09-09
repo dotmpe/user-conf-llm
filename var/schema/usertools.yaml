@@ -1,0 +1,62 @@
+id: http://wtwta.org/organisation/user-tools
+name: user-tools
+
+default_curi_maps:
+  - semweb_context
+imports:
+  - linkml:types
+#  - userscripts
+#  - userconf
+prefixes:
+  personinfo: https://w3id.org/linkml/examples/personinfo/
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+  rdfs: http://www.w3.org/2000/01/rdf-schema#
+  prov: http://www.w3.org/ns/prov#
+  usertools: http://wtwta.org/project/user-tools#
+default_prefix: usertools
+default_range: string
+
+classes:
+  Array:
+    description: A shell list
+  Assoc:
+    description: A shell hashtable
+  Function:
+    description: A shell function
+
+  EnvD:
+    description: Environment dictionary base
+    attributes:
+      _Def:
+        description: Env Def map
+        range: Assoc
+      _D: { range: Array }
+      _Dep:
+        range: Assoc
+      _Fun: { range: Assoc }
+      _Hook: { range: Assoc }
+      _Part: { range: Assoc }
+      _Path: { }
+      _PathA: { range: Array }
+      _Slice: { }
+      _SliceA: { range: Array }
+      _Type: { range: Assoc }
+      _Var: { range: Assoc }
+
+  #Shell:
+  #Terminal: {}
+  #XDesktop: {}
+
+  #String: {}
+  #Array: {}
+  #AssociativeArray: {}
+
+slots:
+  id: { identifier: true }
+  path: { }
+  ns0: { }
+
+#enums:
+
+# usertools_schema.yml @linkml [2026-07-21]

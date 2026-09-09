@@ -139,11 +139,14 @@
 :xredo-config-target() {
   local sources tools
   redo-ifchange ${scr_pre:?}/build-select.sh &&
-  sources=( src/*/*.inc ) &&
-  # TODO: settle on failglob or not
-  [[ ${sources[*]:+set} ]] || say.err "No sources found" || exit
-
-  tools=( tool/local/exec/*.* ) &&
+  if [[ -d src/ ]]; then
+    sources=( src/*/*.inc )
+    :dump-pretty-globals sources >| ./$VAR/redo_default.bash &&
+    redo-stamp <<< "${sources[@]}" || return
+  fi
+  if [[ -d tool/local/exec ]]; then
+    tools=( tool/local/exec/*.* )
+  fi
   for tool in "${tools[@]}"; do
     [[ -x "$tool" ]] || continue
     scr=${tool##*/}
@@ -156,9 +159,6 @@
       :to-v ln -sv "$tool" ${tool##*/} || return
     fi
   done
-
-  :dump-pretty-globals sources >| ./$VAR/redo_default.bash &&
-  redo-stamp <<< "${sources[@]}"
 }
 
 :xredo-index-recipe() {
@@ -219,13 +219,16 @@
       :failerr "Build incomplete, cancelling @test" || return
   fi
   redo-always
+  # TODO: validate actual data with schema
   say.debug "Starting pre-test checks"
+  if [[ -d pack/ns1 ]]; then
+    :failerr "Nothing to test" || return
+  fi
   for x in pack/ns1/usrtools_usr{conf,scr}/*.bash; do
     targets+=( @check:"$x" )
   done
   redo-ifchange "${targets[@]}" || return
   unset targets
-
   say.info "All current packs checked OK, starting tests..."
   for x in pack/ns1/usrtools_usr{conf,scr}/*.bash; do
     : "${x##pack/ns1/}"

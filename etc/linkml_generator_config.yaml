@@ -1,0 +1,7 @@
+---
+# generator_config.yaml
+generator_args:
+  owl:
+    consolidate_cardinality_axioms: true
+    skip_vacuous_local_range_axioms: true
+    skip_vacuous_min_zero_cardinality_axioms: true

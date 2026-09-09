@@ -1,0 +1,41 @@
+---
+id: https://example.org/user-script/format
+name: us_format
+imports:
+  - linkml:types
+prefixes:
+  linkml: https://w3id.org/linkml/
+
+classes:
+  Module:
+    slots: [id, path, ns0, format, symbols, directives]
+  Symbol:
+    slots: [name, kind, defined_in, refs]
+  Reference:
+    slots: [from_symbol, to_symbol, kind]   # call, import, \ldots
+  Directive:
+    slots: [key, value, location]
+  FormatHandler:
+    slots: [name, modes]                    # e.g. Format.Include
+
+slots:
+  id: { identifier: true }
+  name: { }
+  key: { }
+  value: { }
+  path: { }
+  ns0: { }
+  format: { }
+  kind: { range: symbol_kind }
+  modes: { range: pass_mode, multivalued: true }
+  symbols: { }
+  directives: { }
+  location: { }
+  from_symbol: { }
+  to_symbol: { }
+  defined_in: { }
+  refs: { }
+
+enums:
+  symbol_kind: { permissible_values: { local: {}, imported: {}, global: {} } }
+  pass_mode:   { permissible_values: { bbb: {}, index: {}, expand: {} } }
