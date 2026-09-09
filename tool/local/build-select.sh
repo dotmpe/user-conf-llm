@@ -17,6 +17,7 @@ scr_pre=tool/local
 
 case "${XREDO_TARGET}" in @config | @*:config ) ;; ( * )
 
+  # FIXME: cleanup
   #\builtin command -v redo-ifdone >/dev/null 2>&1 &&
   #if ! >/dev/null 2>&1 redo-ifdone @config; then
   redo_targets="$(redo-targets)" &&
@@ -37,8 +38,30 @@ case "${XREDO_TARGET}" in
   ;;
 
 ( @build:config )
-    redo-ifchange ${scr_pre:?}/common_build.sh &&
+    redo-ifchange ${scr_pre:?}/build-select.sh &&
+    redo-ifchange $scr_pre/common_build.sh &&
+    redo-stamp < <(grep -Po '^\(\ [^\)]+\ \)$' $scr_pre/build-select.sh) &&
     redo-stamp < <(grep -Po '^:xredo-[A-Za-z0-9-]+(?=\(\))' $scr_pre/common_build.sh)
+  ;;
+
+( @build:schema:* )
+    \builtin . $scr_pre/build_schema.sh &&
+    :xredo-build-schema-recipe &&
+    redo-stamp <<< "$(:funbody $_)" &&
+    redo-ifchange @build:config
+  ;;
+
+( @build:schema )
+    \builtin . $scr_pre/build_schema.sh &&
+    :xredo-build-schema-target &&
+    redo-stamp <<< "$(:funbody $_)" &&
+    redo-ifchange @build:config
+  ;;
+
+( @build:ns1 )
+    :xredo-build-ns1-target &&
+    redo-stamp <<< "$(:funbody $_)" &&
+    redo-ifchange @build:config
   ;;
 
 ( @check )

@@ -3,8 +3,7 @@
 # common_build.sh is the home for all target recipes
 
 :uc-diag:forbidden-patterns() {
-  # NOTE: this file and other tools are in tool/local/*, so patterns
-  # themselves must (in general) be kept as config (elsewhere).
+  # NOTE: keep patterns in plain text config, outside scans
   redo-ifchange etc/diag_forbidden_patterns.bash.lines &&
   :pass "$(< $_ )" &&
   \builtin . <(printf "forbidden=(\m%s\n)" "$_") &&
@@ -16,13 +15,23 @@
     :to-v grep -HPn "^[^#:]*$x" "$script" || continue
     :failerr "Found forbidden ${x@Q}, see before lines" || return
   done
+
+  redo-stamp <<< "${forbidden[*]}"
 }
 
 :uc-diag:shell-lint-check() {
+  \builtin command shellcheck "$script" >&${USER_FD:?}
+}
+
+:uc-diag:shell-load-plus-lint-check() {
   ( \builtin . "$script" ) ||
     :failerr "E$? on test-loading ${script@Q}" || return
-  \builtin command shellcheck "$script" >&2 &&
+  \builtin . <(:uc-diag:shell-lint-check) &&
   say.v "Load and shellcheck passed for ${script@Q}"
+}
+
+:uc-diag:todo-comments() {
+  TODO "implement comment scan"
 }
 
 :uc-diag:unguarded-tooling-invocations() {
@@ -44,8 +53,23 @@
   :failerr "Found unguarded tooling invocation(s), see before lines"
 }
 
-:uc-diag:todo-comments() {
-  TODO "implement comment scan"
+:xredo-build-target() {
+  redo-always &&
+  :cache-load ./$ETC/redo_default.bash &&
+  redo-ifchange "${xredo_build_targets[@]:?}"
+}
+
+:xredo-build-ns1-target() {
+  local src
+  if [[ ! ${sources[*]} ]]; then
+    :cache-load ./$VAR/redo_default.bash || return
+  fi
+  for src in "${sources[@]:?}"; do
+    src=${src#src/}
+    targets+=( "@index:${src:?}" )
+    targets+=( "pack/ns1/${src%.inc}.bash" )
+  done &&
+  redo-ifchange "${sources[@]}" "${targets[@]}"
 }
 
 :xredo-check-recipe() {
@@ -60,19 +84,25 @@
   ( pack/* )
       # TODO: rewrite parts so they can be used as recipe target
       #: "${diag:=@uc-diag:shell-lint-check}"
-      :uc-diag:shell-lint-check
+      :uc-diag:shell-load-plus-lint-check
     ;;
 
-  ( *.do | tool/local/common* )
-      :uc-diag:shell-lint-check &&
+  ( src/* | tool/local/common* )
+      :uc-diag:shell-load-plus-lint-check &&
       :uc-diag:forbidden-patterns &&
       #:uc-diag:unguarded-tooling-invocations &&
       : # :uc-diag:todo-comments
     ;;
 
-  ( src/* | test/* | tool/* )
+  ( *.do | test/* | tool/* )
+      :uc-diag:shell-lint-check &&
       :uc-diag:forbidden-patterns &&
       : #:uc-diag:todo-comments
+    ;;
+
+  ( *.yaml | *.md )
+      # :uc-diag:forbidden-patterns &&
+      :uc-diag:todo-comments
     ;;
 
   ( * ) :failerr "There is no check action for script ${script@Q}"
@@ -80,9 +110,16 @@
 }
 
 :xredo-check-target() {
+  if [[ ! ${REDO_ALL:+set} ]]; then
+    redo-ifdone @build ||
+      :failerr "Build incomplete, cancelling @check" || return
+  fi
   redo-always
   local files targets
   files=(
+    {,.}*.yaml
+    *.md
+    doc/*.md
     default.do
     src/*/*.inc
     test/*.*
@@ -99,19 +136,9 @@
   redo-ifchange "${targets[@]}"
 }
 
-:xredo-build-target() {
-  \builtin . ./$VAR/redo_default.bash &&
-  for src in "${sources[@]:?}"; do
-    src=${src#src/}
-    targets+=( "@index:${src:?}" )
-    targets+=( "pack/ns1/${src%.inc}.bash" )
-  done &&
-  #:to-v :dump-pretty-globals sources targets &&
-  redo-ifchange ${scr_pre:?}/build-select.sh "${sources[@]}" "${targets[@]}"
-}
-
 :xredo-config-target() {
-  redo-ifchange ${scr_pre:?}/build-select.sh
+  local sources tools
+  redo-ifchange ${scr_pre:?}/build-select.sh &&
   sources=( src/*/*.inc ) &&
   # TODO: settle on failglob or not
   [[ ${sources[*]:+set} ]] || say.err "No sources found" || exit
@@ -130,24 +157,25 @@
     fi
   done
 
-  #:dump-globals sources >| ./$VAR/redo_default.bash &&
   :dump-pretty-globals sources >| ./$VAR/redo_default.bash &&
   redo-stamp <<< "${sources[@]}"
 }
 
 :xredo-index-recipe() {
   src=src/${XREDO_TARGET#@index:}
+
   redo-ifchange "$src" &&
-  \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
+  \builtin . ${scr_pre:?}/init-pp.sh >&${USER_FD:?} &&
   .run "$src" .match-line > /dev/null || :failerr "Indexing ${src@Q}"
 }
 
 :xredo-pack-recipe() {
   : "${XREDO_TARGET#pack/ns[0-9]/}"
   src=src/${_%.bash}.inc
+
   redo-ifchange ${scr_pre:?}/build-select.sh "$src" &&
   mkdir -p "${XREDO_TARGET%/*}" &&
-  \builtin . ${scr_pre:?}/init-pp.sh >&2 &&
+  \builtin . ${scr_pre:?}/init-pp.sh >&${USER_FD:?} &&
   .run "$src" .match-line > "$BUILD_TARGET_TMP" ||
     :failerr "Building ns1 for ${src@Q}"
 }
@@ -175,16 +203,21 @@
   testid=$(sha256sum < <(printf '%s\n' "${tests[@]}")) &&
   : $'[\t ]' &&
   testid=${testid%%$_*} &&
-  # >&2 declare -p testid &&
+  # :to-v declare -p testid &&
   mkdir -p .local/build &&
   \builtin command bashunit \
     --env test/_test_bootstrap.sh \
     --log-junit .local/build/test-report-$testid.xml \
     --coverage --coverage-min 80 \
-    "${tests[@]}" >&2
+    "${tests[@]}" >&${USER_FD:?}
 }
 
 :xredo-test-target() {
+  # Makes no sense to test after incomplete build (ie. running redo -k)
+  if [[ ! ${REDO_ALL:+set} ]]; then
+    redo-ifdone @build ||
+      :failerr "Build incomplete, cancelling @test" || return
+  fi
   redo-always
   say.debug "Starting pre-test checks"
   for x in pack/ns1/usrtools_usr{conf,scr}/*.bash; do

@@ -29,8 +29,8 @@ Include() {
       : "${_//" && "/$' && \n'}"
       : "${_//" || "/$' || \n'}"
       local expanded=$_
-      #...Pre-Processor._unshift-lineblock expanded
-      ._unshift-lineblock expanded
+      #...Pre-Processor.unshift-lineblock expanded
+      .unshift-lineblock expanded
       return ${_E_retry:?}
     ;;
   ( ':'[A-Za-z_-]* )
@@ -45,6 +45,7 @@ Include() {
 }
 
 .match-line() {
+: tag preproc hook
   local -n _from=${1}
   case "${_from}" in
 
@@ -89,16 +90,15 @@ Include() {
 }
 
 ._read-assoc() {
+  # Output assoc with value(s) from following functions (the body script), and
+  # key from the name. The initial function is to declare the base name.
   local array_name=${us_pp_line%()*} function_block=
   declare -gA ${array_name:1}
   declare -n dest=$_
   while ((1)); do
-    ._read-line || return
-    # {
-    #   local st=$?
-    #   :to-v declare -p array_name function_block
-    #   :failerr "E$st While reading assoc ${!dest}" $st || return
-    # }
+    # XXX: should probably try to cleanup state a bit, but this may just be
+    # _E_continue (etc) too.
+    .read-line || return
     case "${us_pp_line}" in
     ( "$array_name":[A-Za-z_][A-Za-z0-9_.:+-]*"() {"* )
         : "${us_pp_line#"$array_name":}"
@@ -112,19 +112,13 @@ Include() {
     #( * ) break ;;
     esac
   done
+  # Get the package prefixed name, and typeset the var+value
   _ns0_arr=$_ns0_pre.${!dest}
   ..Namespace.map-to-ns1 _ns{0,1}_arr &&
-  # FIXME: should output as block
-  :pass "$(
-    #..Shell.dump-globals ${!dest}:${_ns1_arr:?}
-    # FIXME:
-    :dump-pretty-globals ${!dest}:${_ns1_arr:?}
-  )" &&
-  #: "${_// \[/$'\n  ['}" &&
-  #: "${_//=\(\[/$'=(\n  ['}" &&
-  #printf '\n%s\n\n' "$_"
-  printf '%s\n' "$_"
-  [[ ! ${us_pp_line:+set} ]] || return ${_E_continue:?}
+  :pass "$(:dump-pretty-globals ${!dest}:${_ns1_arr:?})" &&
+  # And emit the definition as block
+  us_pp_block=${_:?}$'\n'${us_pp_line:+$'\n'$us_pp_line$'\n'} us_pp_line= &&
+  return ${_E_continue:?}
 }
 
 ._read-localname() {
@@ -174,8 +168,8 @@ Include() {
     us_pp_line=${us_pp_line/%\}}
     :globstrip-charsright us_pp_line $'[;\ \t]'
     us_pp_line+=$'\n'\}
-    #...Pre-Processor._unshift-lineblock expanded
-    ._unshift-lineblock us_pp_line
+    #...Pre-Processor.unshift-lineblock expanded
+    .unshift-lineblock us_pp_line
     return ${_E_retry:?}
   fi
 }
@@ -183,8 +177,8 @@ Include() {
 ._wrap-line() {
   if [[ ${us_pp_line} = *" :- "* ]]; then
     local expanded=${us_pp_line//' :- '/$'\n'}
-    #...Pre-Processor._unshift-lineblock expanded
-    ._unshift-lineblock expanded
+    #...Pre-Processor_unshift-lineblock expanded
+    .unshift-lineblock expanded
     return ${_E_retry:?}
   fi
 }

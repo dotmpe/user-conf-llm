@@ -101,13 +101,18 @@ Shell() {
 : aliases sh-fbody fun-body
 : input "${1:?$(:argv-err 1 'Function name expected')}"
   (($#-1)) &&
-  local -n _out=${2:?$(:argv-err 2 'Output name expected')} ||
-    local _out
+  local -n _out=${2:?$(:argv-err 2 'Output name expected')} || local _out
+
+  # TODO: make more robust for some actual output @ Bash version @bashunit
   :pass "$(typeset -f "$1")" || return
   : "${_#* () }"
   : "${_:4:-2}"
   _out="$_"
-  (($#>1)) || echo "$_out"
+  if [[ ! ${_out:+set} ]]; then
+    say.v "Empty function body for ${1@Q} (ignored)"
+  else
+    (($#>1)) || printf '%s\n' "$_out"
+  fi
 }
 
 .function-eval() {

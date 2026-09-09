@@ -14,7 +14,7 @@ echo ${0##*/}: init done, mode is now $-
 #. <(uc_inc_pre usrtools_usrconf/uc_docker)
 
 DEBUG=0 VERBOSITY=4
-\builtin . ./init-pp.sh
+\builtin . $scr_pre/init-pp.sh
 
 #to-v type inline-fun
 .run src/usrtools_usrscr/us_pp.inc .match-line

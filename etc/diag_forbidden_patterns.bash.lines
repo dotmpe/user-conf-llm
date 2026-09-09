@@ -4,9 +4,9 @@
 # Consider writing to USER_FD or making another channel
 #'>&2 '
 # All of these must have [:._] prefix or use escape as well
-'[^\\:._\]]pass\>'
-'[^\\:._\]]ignore\>'
-'[^\\:._\]]failerr\>'
+'[^\\:._]pass\>'
+'[^\\:._]ignore\>'
+'[^\\:._]failerr\>'
 # Use of old ignore; should be reserved for temp/transient dynamic functions
 '^\ *_\ '
 # Possible no-op/not-implemented lines should use TODO:
@@ -16,7 +16,12 @@
 # Other deprecated functions and patterns:
 '\$\{\d:?\$FUNCNAME:'
 '\$\{\d:?\$\{FUNCNAME\['
-typeset
+'[^\(\\:._-]typeset '
+'[^\(\\:._-]which '
+'[^\(\\:._-]readarray '
+'^\ *source\ '
+# set
+# type
 if_ok
 sh_fun
 sh_fun_body

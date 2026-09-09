@@ -28,6 +28,7 @@ fi
   if [[ $stat -gt 255 ]]; then
     ((stat-=256))
   fi
+  # FIXME: use USER_FD as output
   if [[ -n ${_os_script_path['us-palette']:+set} && -n ${COLORTERM:+set} ]]; then
     if [[ $stat -eq 0 ]]; then
       echo "${C_PASS-}$1${NORMAL-}" 1>&2
@@ -119,12 +120,18 @@ fi
 : name User-Script.Shell.function-body
 : param '<Ref-fun> [<Dest-var>] ...'
 : input "${1?$(:argv-err 1 'Function name expected')}"
-  (($#-1)) && local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out
+  (($#-1)) &&
+  local -n _out=${2?$(:argv-err 2 'Output name expected')} || local _out
+
   :pass "$(typeset -f "$1")" || return
   : "${_#* () }"
   : "${_:4:-2}"
   _out="$_"
-  (($#>1)) || echo "$_out"
+  if [[ ! ${_out:+set} ]]; then
+    say.v "Empty function body for ${1@Q} (ignored)"
+  else
+    (($#>1)) || printf '%s\n' "$_out"
+  fi
 }
 
 :cache-load () {
@@ -142,9 +149,6 @@ fi
     }
   } || say.debug "Missing or empty ${1@Q} cache (E$?, ignored)"
 }
-
-:isfun User-Conf.Cache.load-data ||
-User-Conf.Cache.load-data() { .load-file "$@"; }
 
 :cache-loadmaps () {
 : name User-Conf.Cache.load-maps
@@ -206,22 +210,22 @@ inline() {
 
 # sometimes when writing it might help to have dev-mode only defs, like this:
 if shopt -q expand_aliases; then
-  alias printf.line="printf '%s\\n'"
+  alias printf.lines="printf '%s\\n'"
   alias 'say@v=:say-when $VERBOSITY'
   #shellcheck disable=2142  # alias referencing positionals is fine, actually
   alias functxln='say@v "$FUNCNAME: ${*@Q} [$#]"'
   alias inline='\inline;'
 else
-  printf.line() { printf '%s\\n' "$@"; }
+  printf.lines() { printf '%s\\n' "$@"; }
   say@v() { :say-when $VERBOSITY "$1"; }
   functxln() {
     say@v "${FUNCNAME[1]}: $(TODO "bash call arg inspection for outer function?")"
   }
 fi
 
-printf.lines() {
+printf.lines.arr() {
   local -n _pfl_arr=${1:?Array name}
-  printf.line "${_pfl_arr[@]}"
+  printf.lines "${_pfl_arr[@]}"
 }
 printf.lines.array-map.tab() {
   local _pfl_k
@@ -233,6 +237,7 @@ printf.lines.array-map.tab() {
     printf '%s\t%s\n' "$_pfl_k" "${_-NULL}"
   done
 }
+
 say.err() { :say-when 1 "$1"; }
 say.info() { :say-when 2 "$1"; }
 say.v() { :say-when 3 "$1"; }
@@ -325,6 +330,12 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
   :zip-assign.args names "${@:2}"
 }
 
+:read-args.all-words() {
+: about 'Variant that concatenates remaining arguments at the last variable'
+  ___=:_args+names; inline-fun-status
+  :zip-assign.all-args names "${@:2}"
+}
+
 :read-setting() {
 : about 'A read-args wrapper that takes the expression from a variable'
 : param '~ <Expression-name> <Values...>'
@@ -332,6 +343,18 @@ alias inline-fun-status="${_inline_fun_status_tpl//_%_/___}"
   local -n _sk=${1}
 : input "${_sk:?$(:unset-err $1 "Expansion expression")}"
   :read-args "$_sk" "${@:2}"
+}
+
+:zip-assign.all-args() {
+: param '~ <Array> <Values...>'
+: input "${1:?$(:argv-err 1 'Array name')}"
+: input "${2:?$(:argv-err 2 'Assignment values')}"
+  local -n _Vars=${1}
+  local -n _lastVar='_Vars[-1]'
+  local offset
+
+  :zip-assign.args "$@" &&
+  (( offset=${#_Vars[@]} )) && _lastVar+=${_lastVar:+ }${*:offset}
 }
 
 :zip-assign.args() {
@@ -459,24 +482,26 @@ User-Script.Shell.variable-type-cache() {
 }
 
 :dump-pretty-global-array() {
-  local sym=${1:?} assoc=0
-  local -n _sh_vfl='us_shell_tspec["$sym"]'
+: input "${1:?$(:argv-err 1 '<Variable[:alias]>')}}"
+  local var=${1:?} als assoc=0
+  case "$var" in ( *:* ) als=${var#*:} var=${var%:*};; ( * ) als=; esac
+
+  local -n _sh_vfl='us_shell_tspec["$var"]'
   [[ $_sh_vfl == -A ]] && assoc=1 ||
   [[ $_sh_vfl == -a ]] ||
-    :failerr "$FUNCNAME: Not an array ${sym@Q}" || return
-  local -n value=$sym'["$key"]' input=$sym
-  [[ "${input[*]:+set}" ]] ||
-    :failerr "$FUNCNAME: Empty input array ${sym@Q}" || return
+    :failerr "$FUNCNAME: Not an array ${var@Q}" || return
+  local -n value=$var'["$key"]' input=$var
   local key{,s} output
+
   ((assoc)) && : A || : a
-  printf -v output 'declare -g%s %s=(\n' "$_" "$sym"
-  if [[ ${sym[*]:+set} ]]; then
+  printf -v output 'declare -g%s %s=(\n' "$_" "${als:-${var}}"
+  if [[ "${input[*]:+set}" ]]; then
     keys=( "${!input[@]}" )
     # FIXME: sort is for dictionary (assoc arrays)
     ! ((assoc)) || :sort-array keys
     for key in "${keys[@]}"; do
       [[ "${value:+set}" ]] ||
-        :failerr "Empty value in array ${sym@Q} at key ${key@Q}" || return
+        :failerr "Empty value in array ${var@Q} at key ${key@Q}" || return
 
       : "${value@Q}"
       #: "${_//'\n'/$'\n'}"
@@ -491,7 +516,7 @@ User-Script.Shell.variable-type-cache() {
 
 :dump-pretty-globals() {
 : about 'Helper to make readable, formatted variable dumps'
-: param '~ <Vars...>'
+: param '~ <Var[:alias] ...>'
 : completion 'complete -A variable -A arrayvar'
 : input "${*:?$(:argv-err \* 'Variable name(s)')}"
   local var als
@@ -501,21 +526,28 @@ User-Script.Shell.variable-type-cache() {
     case "$var" in ( *:* ) als=${var#*:} var=${var%:*};; ( * ) als=; esac
     User-Script.Shell.variable-type-cache "$var" &&
     case "$_sh_vfl" in
-    ( -[Aa] ) :dump-pretty-global-array "$var" ;;
+    ( -[Aa] ) :dump-pretty-global-array "$var:$als" ;;
     ( * ) :failerr "TODO: dump pretty ${var@Q}" || return
-    esac || :failerr "E$? making pretty dump for ${var@Q}" || return
+    esac || :failerr "E$? making pretty dump for ${var@Q}:${als@Q}" || return
   done
 }
 
+..Cache.load-maps() { .load-maps "$@"; }
+..Cache.load-data() { .load-data "$@"; }
+
+# :isfun User-Conf.Cache.load-data ||
+# User-Conf.Cache.load-data() { .load-file "$@"; }
+
 ..Namespace.map-to-ns1() { .map-to-ns1 "$@"; }
+
+..Operating-System.path-append() { :path-append "$@"; }
+# :isfun User-Script.Operating-System.path-append ||
+# User-Script.Operating-System.path-append() { :path-append "$@"; }
 
 ..String.join-array() { .join-array "$@"; }
 
 ..Shell.dump-globals() { .dump-globals "$@"; }
 
-..Operating-System.path-append() { :path-append "$@"; }
-# :isfun User-Script.Operating-System.path-append ||
-# User-Script.Operating-System.path-append() { :path-append "$@"; }
 
 
 if [[ ${0##*/} = common-dsl.bash ]]; then

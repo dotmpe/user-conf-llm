@@ -13,7 +13,7 @@ Namespace() {
 : env "${US_NS_CACHE:=${CACHE_DIR:-.local/cache}}"
 : env "${US_NS_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
 : env "${US_NS_STATE:=${US_NS_DATADIR:?}/us_ns_state.data.bash}"
-: env "${US_NS_STATE_MAPSPEC:=us_ns_{map{0..3\}\}}"
+: env "${US_NS_STATE_MAPSPEC:=us_ns_map{0..3\}}"
   declare -ga us_ns_state_assocs
 : env "${UC_NS_PATHS:=${UC_NS_PATHS:-.}}"
   :cache-load "etc/bash/uc_meta_ns.seed.bash" &&

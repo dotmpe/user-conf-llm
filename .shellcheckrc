@@ -18,15 +18,20 @@ disable=SC2086 # Not going to quote every var, also i'll use double quotes to pr
 
 disable=SC2088 # Tilde does not expand in quotes. Use $HOME.
 disable=SC2089 # Quotes/backslashes will be treated literally. Use an array.
+
+disable=SC2059 # Don't use variables in the printf format string. Use printf
+
 disable=SC2090 # Quotes/backslashes in this variable will not be respected.
 
 disable=SC2119 # 2119: No "$@" noob help
 
-disable=SC2166 # Prefer [ p ] && [ q ] as [ p -a q ] is not well defined
-
 disable=SC2128 # Expanding an array without an index only gives the first element.
 
-disable=SC2059 # Don't use variables in the printf format string. Use printf
+disable=SC2148 # Tips depend on target shell and y...
+
+disable=SC2154 # <Var> is referenced but not assigned
+
+disable=SC2166 # Prefer [ p ] && [ q ] as [ p -a q ] is not well defined
 
 ## Source path settings
 

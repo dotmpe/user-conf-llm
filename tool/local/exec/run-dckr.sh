@@ -5,6 +5,7 @@
 scr_pre=tool/local
 \builtin . $scr_pre/common_script.bash
 \builtin . $scr_pre/common-dsl.bash
+echo ${0##*/}: init done, mode is now $-
 
 #us_part $usp_opts --reload uc-loader
 #. <(uc_inc_pre usrtools_usrconf/uc_dckr)

@@ -7,63 +7,63 @@
 Pre-Processor() {
 : tag group
 : man '~ is a Bash read loop that manages a source stack and invokes a line
-matcher. If unhandled by the matcher, the pre-processor loop emits the line
-again.
-
-The matcher'\''s return status determines the behavior of the loop.
-
-  0              Read next line
-  _E_break       Stop read loop
-  _E_continue    Continue with current line (but keep value)
-  _E_next        Emit and read next line
-  _E_retry       Re-read line value (but do not increment line counter)
-
-Both E:continue and E:retry skip the default emit but keep invoking the matcher.
-But only E:continue keeps the line data until it clears. These two can be used
-to reprocess data. While us_pp_line can hold one line of preprocessed data,
-multiple lines of data must be pushed back onto the source stack as a block, so
-that an actual line can be re-read from it. '
+ matcher. If unhandled by the matcher, the pre-processor loop emits the line
+ again.
+ 
+ The matcher'\''s return status determines the behavior of the loop.
+ 
+   0              Read next line
+   _E_break       Stop read loop
+   _E_continue    Continue with current line (but keep value)
+   _E_next        Emit and read next line
+   _E_retry       Re-read line value (but do not increment line counter)
+ 
+ Both E:continue and E:retry skip the default emit but keep invoking the matcher.
+ But only E:continue keeps the line data until it clears. These two can be used
+ to reprocess data. While us_pp_line can hold one line of preprocessed data,
+ multiple lines of data must be pushed back onto the source stack as a block, so
+ that an actual line can be re-read from it. '
 }
 ._hooks() { : -A : ; }
 ._hooks:global() {
 : env "${US_PP_DATADIR:=${USER_DATA_DIR:-.local/user/data}}"
 : env "${US_PP_STATE:=${US_PP_DATADIR:?}/us_pp_state.data.bash}"
-  declare -g us_pp_run_settings
+  declare -ga us_pp_run_inputs
+  declare -gA uc_spec
 }
 ._hooks:load() {
+  # FIXME: core vars to satisfy shellcheck, would keep in bbb instead
 : env "${_E_break:?}"
 : env "${_E_continue:?}"
 : env "${_E_MA:?}"
 : env "${_E_next:?}"
 : env "${_E_retry:?}"
   
-: env "${US_PP_RUN_SPEC:=us_pp_{input:._source,reader:cb,matcher:cb\}}"
-  \builtin read -ra us_pp_run_settings < <(
-    \builtin . <(echo echo ${US_PP_RUN_SPEC:?}))
+: env "${US_PP_RUN_SPEC:=us_pp_{input.cb:._set-source,params.A:{reader.cb,matcher.cb,emitter.cb\}\}}"
 
   :cache-loadmaps "${US_PP_STATE:?}" us_pp_{name_map,meta_static}
 }
 
-._block-append() {
+.append-block() {
   us_pp_block+=${us_pp_line}$'\n'
 }
 
-._concat-source () {
+.concat-source() {
   local new_fd
-  ._open-filesource "$1" &&
+  ._open-filesource "$1" || return
   # NOTE read is at end of stack, so concat is actually unshift
   us_pp_input_stack=( "$new_fd" "${us_pp_input_stack[@]}" )
   us_pp_input_lnr=( 0 "${us_pp_input_lnr[@]}" )
 }
 
-._open-filesource () {
+._open-filesource() {
   exec {new_fd}<"$1" ||
     :failerr "E$? opening FD for file ${1@Q}" || return
   us_pp_sources+=( "$1" )
   :_debug "Reading from ${1@Q} (FD #${new_fd})"
 }
 
-._read-line() {
+.read-line() {
   (( ${#us_pp_input_stack[@]} == 0 )) && return ${_E_break:?}
     # TODO: pass var?
   ._shift-line || return
@@ -86,22 +86,21 @@ that an actual line can be re-read from it. '
   fi
 }
 
-._source() {
+._set-source() {
 : about 'Reset .run to given source file'
   us_pp_input=${1}
   local new_fd
-  if [[ ! ${us_pp_filter-} ]]
-  then
+  if [[ ! ${us_pp_filter-} ]]; then
     exec {new_fd}<"$us_pp_input"
   else
-    exec {new_fd}< <(< "$us_pp_input" . <(echo "${us_pp_filter}"))
+    exec {new_fd}< <(<"$us_pp_input" . <(echo "${us_pp_filter}"))
   fi
   us_pp_sources+=( "$us_pp_input" )
   us_pp_input_stack=( "$new_fd" )
   us_pp_input_lnr=( 0 )
 }
 
-._unshift-lineblock() {
+.unshift-lineblock() {
   local new_fd
   local -n _str=${1}
   [[ ${_str:+set} ]] ||
@@ -114,7 +113,7 @@ that an actual line can be re-read from it. '
   :_debug "Reading lineblock [${#_str}] from ${FUNCNAME[1]} at FD #${new_fd}"
 }
 
-._unshift-source() {
+.unshift-source() {
   local new_fd
   ._open-filesource "$1" &&
   # NOTE read is at end of stack, so unshift is just push
@@ -122,21 +121,35 @@ that an actual line can be re-read from it. '
   us_pp_input_lnr+=( 0 )
 }
 
+.emit-block() {
+  if [[ ${us_pp_block:+set} ]]; then
+    printf '%s' "$us_pp_block"
+  fi
+  us_pp_block=
+}
+
+.emit-line() {
+# TODO: output to designated FD, setup by us-pp
+  printf '%s\n' "$us_pp_line"
+  us_pp_line=
+}
+
 .run() {
-: param '~ <Source> [<Matcher>] ...'
+: param '~ <Source> [<Params>] ...'
+: about 'Run read-/match/emit-line loop, with variable mode; alternative line or block output; and one builtin "emitter" mode setting.'
 : tag util
 : input "${1:?$(:argv-err 1 "Source path")}"
 
-  #:read-setting US_PP_RUN_SPEC "$@"
   local us_pp_matcher=${2:-User-Script.Format.Include.match-line}
+  
   #\builtin . <(:funbody ._run-common+startup)
   inline ___=._run-common+startup; inline-fun
-  ._source "$1" || return
+  ._set-source "$1" || return
 
   while ((1)); do
 
     if [[ -z ${us_pp_line:+set} || ${us_pp_retry:-0} -eq 1 ]]; then
-      ._read-line us_pp_line ${us_pp_line:+1} || {
+      .read-line us_pp_line ${us_pp_line:+1} || {
         local st=$?
         (( st == _E_break )) && break
         (( st == _E_next  )) && continue
@@ -150,7 +163,7 @@ that an actual line can be re-read from it. '
       local st=$?
       (( st == _E_break    )) && break
       #shellcheck disable=2154
-      (( st == _E_continue )) && continue  # ASSERT !us_pp_line should be consumed
+      (( st == _E_continue )) && continue  # ASSERT !us_pp_line, should be consumed
       #shellcheck disable=2154
       (( st == _E_retry    )) && { us_pp_retry=1; continue; }
       (( st == _E_next     )) && handled=0 || {
@@ -160,18 +173,25 @@ that an actual line can be re-read from it. '
     }
 
     if (( !handled )); then
-      if [[ ${us_pp_block:+set} ]]; then
-        printf '%s' "$us_pp_block"
-        us_pp_block=
-      else
-        printf '%s\n' "$us_pp_line"
-        us_pp_line=
-      fi
+      case "${us_pp_mode:?}" in
+        ( emitter )
+            if [[ ${us_pp_block:+set} ]]; then
+              \builtin . <(:funbody .emit-block)
+            else
+              \builtin . <(:funbody .emit-line)
+            fi
+          ;;
+        ( * ) : default no-op
+      esac
     fi
   done
 
+  inline ___=._run-common+postscript; inline-fun
+}
+
+._run-common+postscript() {
   if (( ${#us_pp_input_stack[*]} > 0 )); then
-    say.err "Closing ${#us_pp_input_stack[*]} remaining unread inputs"
+    say.v "Closing ${#us_pp_input_stack[*]} remaining unread inputs"
     local fd
     for fd in "${us_pp_input_stack[@]}"; do
       exec {fd}<&- || say.err "E$? closing FD $fd (ignored)"
@@ -185,32 +205,37 @@ that an actual line can be re-read from it. '
     :to-v printf.lines.array-map.tab us_pp_meta_static
   fi
 
-  # TODO: manage state per source
+  # TODO: fix indexing impl, then manage state per source
   #cache_dumpmaps "${US_PP_STATE:?}" "${us_pp_state_assocs[@]}"
 
   >| "${US_PP_STATE:?}" \
-  ..Shell.dump-globals us_pp_{name_map,meta_static}
-  #:dump-pretty-globals us_pp_{name_map,meta_static}
+  :dump-pretty-globals us_pp_{name_map,meta_static}
+  #..Shell.dump-globals us_pp_{name_map,meta_static}
 }
 
 ._run-common+startup() {
   local us_pp_{block,line,mode,retry}
+  : "${us_pp_mode:=emitter}"
 
   local -n us_pp_fd='us_pp_input_stack[-1]'
   local -n us_pp_srclnr='us_pp_input_lnr[-1]'
   local -a us_pp_input_{stack,lnr}
   local us_pp_lnr=0
 
+  # XXX: This should be in Format.Include, but the (shebang/mode) lines are
+  # input file based too so may be look into plugin file opener/resolver as
+  # well.
+  local -I us_pp_lang
   [[ ${us_pp_lang-} ]] ||
   ! ((DEBUG)) ||
     say.err "Language expected for prefilter and/or comment + shebang/modeline formats (ignored)"
   : "${us_pp_lang:=}"
 
-  # FIXME: give global access to accumulated sources, for cache invalidation etc.
+  # XXX: give global access to accumulated sources, for cache invalidation etc.
   # Should probably prepare a copy for these on request, after wrapping up run
-  declare -a us_pp_sources
-  #declare -A us_pp_name_map
-  #declare -A us_pp_meta_static
+  declare -ga us_pp_sources
+  declare -gA us_pp_name_map
+  declare -gA us_pp_meta_static
 
   #if ((do_outline))
   #then

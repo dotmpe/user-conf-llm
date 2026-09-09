@@ -25,8 +25,8 @@
 declare -ga uc_cb_exit
 :exit() {
   [[ ! ${uc_cb_exit[*]:+set} ]] ||
-    \builtin . <(printf.line "${uc_cb_exit[@]}") ||
-      :failerr "E$? During :exit cleanup"
+    \builtin . <(printf '%s\n' "${uc_cb_exit[@]}") ||
+      :failerr "E$? During :ex it cleanup"
 }
 
 

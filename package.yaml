@@ -6,7 +6,7 @@
     aliases:
       aider+user: |
         : Id usrtools_user-conf::docker-aider_als::aider+user
-        [[ -d .local/user/data ]] || failerr "not in a basedir" || return;
+        [[ -d .local/user/data ]] || failerr "not in a basedir" || return
         \builtin command aider \
          --no-show-release-notes --no-gitignore \
          --no-auto-commits \
