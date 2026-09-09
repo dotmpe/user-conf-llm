@@ -10,16 +10,13 @@ var=./$VAR/redo_default.bash
   echo "New file $var" >&2
 }
 [ -e $etc ] || {
-  echo "
-xredo_all_targets=( @config @build @test @check )
-xredo_build_targets=( @build:ns1 @build:schema )
-" > "$etc"
+  cp ./etc/redo_default+seed.bash "$etc" &&
   echo "New file $etc" >&2
 }
-export REDO_ALL=set
+export REDO_ALL=${REDO_ALL:-y}
 
 # Reset caches including user-data state (for now.. TODO: CI build env finetune)
-rm -f .local/build/ .local/cache/ .local/user/data/
+rm -rf .local/build/ .local/cache/ .local/user/data/
 
 redo @config
 redo -j10 -k @config all

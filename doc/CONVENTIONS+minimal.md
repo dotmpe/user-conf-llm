@@ -17,7 +17,8 @@ Preamble:
 
 * Schema can be written in LinkML YAML format documents (and used to validate YAML data, or to validate or handle data in downstream projects using code generated from schema).
 
-* This document is one of several CONVENTIONS*md files, found at ``doc/`` for several projects. It is the primary project file for guidance and LLM/agentic interactions, of which we see two or more modes:
+* This document is one of several CONVENTIONS and AGENT files, found at ``doc/`` for several projects.
+  It is the primary project file for guidance and LLM/agentic interactions, of which we see two or more modes:
 
   - 'Full edit' or a "coding" mode, where file updates are given.
   - A conversational 'ask' mode with output restricted to examples and answers.
@@ -98,11 +99,13 @@ Still.Long.Name.Space.Prefix.MyFun() {
 - Local tooling live almost exclusively in ``tool/*/...`` where the asterisk stands-in for a globally defined suite or may be a language like "bash".
   ("tool/local" is a convenient root to tuck away any project specific scripts including Bash but without considering global or shared paths at all.)
 
-- Other resources and dotfiles are configured as far as possible to be in etc/, var/, lib/, etc.
+- Other resources and dotfiles are configured (as far as possible) to be in etc/, var/, lib/, etc.
 
 - For files that do not check in, use the .local/{etc,var,...} prefix. The .local/user is specifically to keep local user config and state.
 
 - For cache and build, use .local/{cache,build} for local and prefer global paths. For those paths prefer to use additional subdirectories, per script or session or task, to make management easier. Do not put state information in cache, it must be regenerative and safe to be deleted without breaking the current project stage.
+
+- Third party files need to go into ``lib/``, ``usr/`` and others as appropriate, or be kept in other trees that match the required file format and name layout.
 
 ## Project flow
 

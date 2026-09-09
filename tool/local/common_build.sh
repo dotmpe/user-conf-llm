@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
 # common_build.sh is the home for all target recipes
+:config-warning() {
+  config_seed=etc/redo_default+seed.bash
+  build_config=.local/etc/redo_default.bash
+  say.v "Config incomplete at ${build_config} (see seed at ${config_seed@Q})" || return
+}
 
 :uc-diag:forbidden-patterns() {
   # NOTE: keep patterns in plain text config, outside scans
@@ -116,16 +121,24 @@
   fi
   redo-always
   local files targets
+  # FIXME: autoconfigure glob entirely
   files=(
-    {,.}*.yaml
+    # {,.}*.yaml
     *.md
     doc/*.md
     default.do
-    src/*/*.inc
-    test/*.*
-    tool/bash/part/*
-    tool/local/{,exec/}*.*
+    # src/*/*.inc
+    tool/local/*.*
   )
+  if [[ -d test ]]; then
+    files+=( test/*.* )
+  fi
+  if [[ -d tool/local/exec ]]; then
+    files+=( tool/local/exec/*.* )
+  fi
+  if [[ -d tool/local/part ]]; then
+    files+=( tool/local/part/*.* )
+  fi
   for file in "${files[@]}"; do
     # TODO: make some grouping(s) of diag/src sets, not all should always need
     # to be on. CI would have the most complete set, then the (full) test
@@ -133,12 +146,20 @@
     # @uc-diag:regression-grep
     targets+=( "@check:$file" )
   done
-  redo-ifchange "${targets[@]}"
+  redo-ifchange "${targets[@]}" &&
+  :cache-load ./$ETC/redo_default.bash &&
+  if [[ ! ${xredo_build_targets[*]:+set} ]]; then
+    :failerr "No build targets set"
+    TODO "guided setup? copy seed/example files for CI build?"
+  fi
 }
 
 :xredo-config-target() {
   local sources tools
-  redo-ifchange ${scr_pre:?}/build-select.sh &&
+  redo-ifchange ${scr_pre:?}/build-select.sh || return
+  if [[ ! -s .local/etc/redo_default.bash ]]; then
+    :config-warning
+  fi
   if [[ -d src/ ]]; then
     sources=( src/*/*.inc )
     :dump-pretty-globals sources >| ./$VAR/redo_default.bash &&
@@ -221,7 +242,8 @@
   redo-always
   # TODO: validate actual data with schema
   say.debug "Starting pre-test checks"
-  if [[ -d pack/ns1 ]]; then
+  if [[ ! -d pack/ns1 ]]; then
+    :config-warning
     :failerr "Nothing to test" || return
   fi
   for x in pack/ns1/usrtools_usr{conf,scr}/*.bash; do

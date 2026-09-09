@@ -6,8 +6,8 @@ _failerr() {
   exit $stat
 }
 
-sudo apt-get update &&
-sudo apt-get install -y shellcheck &&
+sudo apt-get update -qq &&
+sudo apt-get install -qqy shellcheck &&
 \builtin command -v shellcheck >/dev/null 2>&1 ||
   _failerr "Failed to provision shellcheck (E$?)"
 
@@ -16,13 +16,13 @@ sudo mv -v lib/bashunit /usr/local/bin/ &&
 \builtin command -v bashunit >/dev/null 2>&1 ||
   _failerr "Failed to provision bashunit (E$?)"
 
-pip install linkml ||
+pip install -q linkml ||
   _failerr "Failed to provision linkml (E$?)"
 
 REDO_TMP="$(mktemp -d)"
 # NOTE: need tags and cannot specify --depth 1
 # TODO: check out github distributions +redo
-git clone --branch ifdone https://github.com/dotmpe/redo.git "$REDO_TMP" &&
+git clone --quiet --branch ifdone https://github.com/dotmpe/redo.git "$REDO_TMP" &&
 (
   cd "$REDO_TMP" &&
   ./do -j10 build &&

@@ -29,7 +29,8 @@ Preamble:
 
 * Schema can be written in LinkML YAML format documents (and used to validate YAML data, or to validate or handle data in downstream projects using code generated from schema).
 
-* This document is one of several CONVENTIONS*md files, found at ``doc/`` for several projects. It is the primary project file for guidance and LLM/agentic interactions, of which we see two or more modes:
+* This document is one of several CONVENTIONS and AGENT files, found at ``doc/`` for several projects.
+  It is the primary project file for guidance and LLM/agentic interactions, of which we see two or more modes:
 
   - 'Full edit' or a "coding" mode, where file updates are given.
   - A conversational 'ask' mode with output restricted to examples and answers.
@@ -146,6 +147,8 @@ Still.Long.Name.Space.Prefix.MyFun() {
 
 # Project Setup
 
+Goal: clutter free and clear root organisation:
+
 - Source lives in `src/` in its own (un-preprocessed) language and syntax.
 
   It (currently still) standard ("vanilla") Bash compatible, but not in its final Bash form yet.
@@ -155,11 +158,13 @@ Still.Long.Name.Space.Prefix.MyFun() {
 - Local tooling live almost exclusively in ``tool/*/...`` where the asterisk stands-in for a globally defined suite or may be a language like "bash".
   ("tool/local" is a convenient root to tuck away any project specific scripts including Bash but without considering global or shared paths at all.)
 
-- Other resources and dotfiles are configured as far as possible to be in etc/, var/, lib/, etc.
+- Other resources and dotfiles are configured (as far as possible) to be in etc/, var/, lib/, etc.
 
 - For files that do not check in, use the .local/{etc,var,...} prefix. The .local/user is specifically to keep local user config and state.
 
 - For cache and build, use .local/{cache,build} for local and prefer global paths. For those paths prefer to use additional subdirectories, per script or session or task, to make management easier. Do not put state information in cache, it must be regenerative and safe to be deleted without breaking the current project stage.
+
+- Third party files need to go into ``lib/``, ``usr/`` and others as appropriate, or be kept in other trees that match the required file format and name layout.
 
 * To list sources and targets *and* access their state externally, we use a modified redo (fork at dotmpe/redo, v0.42d+) for an ifdone command implementation. Succinctly put, the command ``redo-ifdone <target>`` makes an early non-zero exit unless the entire target branch is up-to-date. So when writing recipes (e.g. Bash, run on redo), this enables a way to cancel an invocation as invalid, and without cascading the build and explicit linking that state as prerequisite to the current (like redo-ifchange would, after executing the recipe and the rest of the branch). Simply put, it allows to say the recipe script state *could* not be valid/verified until ``<target>`` is finished, then it must restart *again* but it can not be resumed by redo. (Something redo does not capture well, is its internal--or layered-on interpreters--state. Cf. when ``*.do`` is generated from ``*.do.do``, it does not update because it does not know what makes sense perhaps, or perhaps pre-emptively by the author as an edge-case exception to be mitigated/worked around. Nb. using directories as build targets is an unbehaving edge case as well.)
 

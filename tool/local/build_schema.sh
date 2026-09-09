@@ -19,12 +19,15 @@
   local {in,out}put targets base
   output=.local/build/schema
 
-  redo-always &&
+  redo-always
+  if [[ ! -d var/schema ]]; then
+    :failerr "No LinkML schema(s) to generate code for" || return
+  fi
   for input in var/schema/*.yaml; do
     base=${input%.yaml}
     base=${base##*/}
     targets+=( @build:schema:"$input:$output/${base}" )
-  done &&
+  done
   redo-ifchange "${targets[@]}" &&
   redo-stamp <<< "${targets[*]}"
 }
