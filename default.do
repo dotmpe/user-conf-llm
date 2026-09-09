@@ -9,7 +9,7 @@ shopt -s failglob nullglob
 IFS=$' \t\n'
 
 default_do_env() {
-  [[ ! -e .env ]] || \builtin . ./.env
+  [[ ! -e .env.sh ]] || \builtin . ./.env.sh
   if [[ -e .local/cache/xredo_env.bash ]]; then
     \builtin . .local/cache/xredo_env.bash || return
   else

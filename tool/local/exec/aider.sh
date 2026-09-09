@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$' \t\n'
 
-[[ ! -e .env ]] || \builtin . ./.env
+[[ ! -e .env.sh ]] || \builtin . ./.env.sh
 
 \builtin command aider \
   --no-show-release-notes --no-gitignore \

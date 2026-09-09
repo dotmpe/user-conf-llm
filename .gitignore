@@ -1,5 +1,5 @@
-# Local env seed file
-.env
+# Local env seed file/scripts
+.env*
 
 # Project paths
 pack/
