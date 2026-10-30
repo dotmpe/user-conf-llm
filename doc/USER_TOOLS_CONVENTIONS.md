@@ -40,7 +40,7 @@ The intended result is a set of local and private systems.
 
 That can combine public, private, and separately licensed source or data without making private material a requirement of the public core.
 
-And focused on Bash (currently), but that may branch to support data driven text-based UI and console environments in general.
+Focused on Bash (currently), but that may branch to support data driven text-based UI and console environments in general.
 
 ## Scope
 
@@ -51,8 +51,84 @@ The initial implementation scope is:
 - Unix-style command-line tools;
 - text-based and terminal-oriented workflows.
 
-Other interpreters or platforms could be supported later, but it is a Bash oriented workflow that is the focus for current development.
-This can move to focus on subset-languages and -systems later, but those would in essence follow the existing toolkit, and not complicate the initial Bash-oriented conventions or provide upgrade/transition paths.
+Other interpreters or platforms could be supported later, but it is a Bash oriented workflow that is the focus for current development. (And that suits a lot of deployments, using 'debian' on generic computing.)
+
+Scope may change or move to focus on subset-languages and -systems later.
+
+There is no planned release schema, or exact feature set currently.
+
+## Configuration and data
+
+Configuration, schemas, and data are not source. They relate to the source organisation, but are not automatically equivalent to executable code.
+
+A project should carry all the scripts and/or data required to initialize a development or other work environment for itself, in so far specific to its own operations. And it should observe different kinds and roles for hosts cq. environments and users while doing so.
+
+Layering can achieve that, by exposing surfaces for which there are specific kinds of consumers and/or shared generalizations.
+
+A project core should work with a minimal set of built-in defaults. Additional configuration or data should be discoverable through explicit paths and should be optional unless a component declares it as required.
+
+Public, private, and third-party collections should be distinguishable by location, manifest, or both. Generated products should retain enough information to identify their source and applicable license.
+
+For user tools, the core component can be defined very generically as an interpreter at a console.
+But for current development and deployment, the target is a command shell on a generic computing platform in \*nix style.
+The filesystem (or FHS) and stream IPC, and the process model with environment specifically are the base elements for that.
+A console is where the IPC, process model, and an UART meet, and expose a "terminal".
+It gives special kernel (line discipline) process control and a two-way channel for a serial protocol (ie. ANSI codes on the client).
+
+A secondary component is a command shell, like in the form of Bash.
+And I think also related, intermediate or extra component views based on above.
+
+The single point of truth for a configuration is the starting point, a ``configure.bash`` script and its inputs. See the accompanying [Configuration conventions](CONFIG_CONVENTIONS.md).
+
+## Layered trees and lookup paths
+
+Source and other data are versioned trees. 
+These trees (or parts of them) may be combined, through overlays by using env lookup paths for the composition.
+
+A lookup variable may use the `PATH` name tag, and should contain a colon-delimited sequence.
+The order is significant: earlier entries provide local overrides, while later entries provide shared or fallback material.
+
+A typical lookup order is:
+
+1. project-local paths;
+2. user or worktree paths;
+3. shared +User-Tools paths;
+4. +User-Scripts library paths;
+5. system or third-party paths.
+
+The exact paths are context-dependent. Lookup order must be explicit, documented, and safe when optional layers are absent.
+
+By-name lookup should be used where a stable namespace is more useful than a fixed filesystem location.
+Such lookup should retain the same precedence rules as path lookup.
+The variable may use the `PATHNAME` tag.
+
+## Namespace direction
+
+Since we have an interpreter with only a flat LISP 2 style (separate functions and variables) name space, and an OS without dynamic (file system) binding or layering, the name space must become an important component.
+
+The namespace model distinguishes authored source, external input, and generated products.
+
+- `ns0` — canonical authored source and the source namespace generally;
+- `ns00` — unclassified, temporary, or ad hoc script material;
+- `ns0*` — other source or input collections, including system, user, and third-party material;
+- `ns1..nsN` — build, packaging, deployment, or other generated products.
+
+The namespace number describes a layer or lifecycle role; it does not replace the owning project name.
+
+Initial concrete source contexts include:
+
+- `ns01` — `.inc`, generic composable include fragments;
+- `ns02` — `.lib`, reusable function collections with load, init, or unload conventions;
+- `ns03` — `.group`, local vanilla-Bash groups of variables, functions, and scripts;
+- `ns04` — `.inc.bash`, structured Bash include and formatting contexts.
+
+Initial product contexts include:
+
+- `ns1` — conservative generic build or deployment output;
+- `ns2` — richer or variant output, including dot-hyphen forms where useful;
+- `nsN` — later specialised products defined by their build context.
+
+These names are a working vocabulary. Their exact directory and filename forms remain bound to the packaging, storage, and deployment context.
 
 ## Source and project layout
 
@@ -107,60 +183,6 @@ Important to the current ``configure+skeleton.bash`` setup:
     - `lib/` for .lib.bash or .lib.sh
 
   So some must be declared and coordinated
-
-## Layered trees and lookup paths
-
-Projects may be combined through sparse trees, worktrees, overlays, or installed distributions. Lookup paths provide the mechanism for composing these layers.
-
-Variables such as `US_INC_PATH` should contain colon-delimited lookup sequences. The order is significant: earlier entries provide local overrides, while later entries provide shared or fallback material.
-
-A typical lookup order is:
-
-1. project-local paths;
-2. user or worktree paths;
-3. shared +User-Tools paths;
-4. +User-Scripts library paths;
-5. system or third-party paths.
-
-The exact paths are context-dependent. The convention is that lookup order must be explicit, documented, and safe when optional layers are absent.
-
-By-name lookup may be used where a stable namespace name is more useful than a fixed filesystem location. Such lookup should retain the same precedence rules as path lookup.
-
-## Namespace direction
-
-The namespace model distinguishes authored source, external input, and generated products.
-
-- `ns0` — canonical authored source and the source namespace generally;
-- `ns00` — unclassified, temporary, or ad hoc script material;
-- `ns0*` — other source or input collections, including system, user, and third-party material;
-- `ns1..nsN` — build, packaging, deployment, or other generated products.
-
-The namespace number describes a layer or lifecycle role; it does not replace the owning project name.
-
-Initial concrete source contexts include:
-
-- `ns01` — `.inc`, generic composable include fragments;
-- `ns02` — `.lib`, reusable function collections with load, init, or unload conventions;
-- `ns03` — `.group`, local vanilla-Bash groups of variables, functions, and scripts;
-- `ns04` — `.inc.bash`, structured Bash include and formatting contexts.
-
-Initial product contexts include:
-
-- `ns1` — conservative generic build or deployment output;
-- `ns2` — richer or variant output, including dot-hyphen forms where useful;
-- `nsN` — later specialised products defined by their build context.
-
-These names are a working vocabulary. Their exact directory and filename forms remain bound to the packaging, storage, and deployment context.
-
-## Configuration and data
-
-Configuration, schemas, and data are related to the source organisation but are not automatically equivalent to executable code. Or in other words, they are not source.
-
-The core should work with a minimal set of built-in defaults. Additional configuration or data should be discoverable through explicit paths and should be optional unless a component declares it as required.
-
-Public, private, and third-party collections should be distinguishable by location, manifest, or both. Generated products should retain enough information to identify their source and applicable license.
-
-The single point of truth for a configuration is at the starting point, the ``configure.bash`` script and its inputs. See the accompanying [Configuration conventions](CONFIG_CONVENTIONS.md).
 
 ## Licensing
 

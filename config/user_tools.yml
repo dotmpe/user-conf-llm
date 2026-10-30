@@ -1,0 +1,23 @@
+---
+# Global, when these are set they are included at the top-level context
+global:
+  US_SCR_EXT: .bash .sh
+  US_SRC_PATH: /src/local:/usr/project
+
+# Local; when these are set they associated with specific contexts and components
+local:
+
+# More specific grouping allows to separate source trees and profiles; giving
+# better organisation.
+us-configure.global:
+
+# And settings per specific schema groups; 
+us-skeleton.copy:
+  -
+
+scm.git:
+  GIT_TEMPLATE_REPOSITORY: ${SCM_DOMAIN:-${DOMAIN:?}}/${USER_TOOLS_TEMPLATE:-user-scripts-template}
+
+src.local.vendor.github:
+  GIT_TEMPLATE_REPOSITORY: dotmpe/user-scripts-template
+  US_SKELETON_DIR: /src/local/${GIT_TEMPLATE_REPOSITORY#*/}+dev

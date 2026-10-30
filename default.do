@@ -17,27 +17,29 @@ default_do_env() {
 : env "${_E_retry:=198}"
   ! (($#)) || return ${_E_GAE:?}
 
-  [[ ! -e ${LOCAL_ENV:=.env.sh} ]] && unset LOCAL_ENV || \builtin . "${LOCAL_ENV:?}"
+  if [[ -e ${LOCAL_ENV:=.env.sh} ]]; then
+    \builtin . "${LOCAL_ENV:?}" || return
+  else unset LOCAL_ENV; fi
+
   if [[ -e ${XREDO_ENV:=.local/var/xredo_env.bash} ]]; then
     \builtin . "${XREDO_ENV:?}" || return
-    >&2 declare -p BUILD_SELECT_SH build_select
-    >&2 echo "build_select=$build_select"
   else
-    case "${REDO_TARGET}" in @config )
+    #case "${REDO_TARGET}" in @config )
 
-        if [[ ${DEBUG:+set} && ${DEBUG-} = 1 ]]; then
-          read -ra ghvars < <(compgen -A variable -X '!US_*') &&
-          >&2 declare -p "${ghvars[@]}" || :
-          unset ghvars
-        fi
+    #    if [[ ${DEBUG:+set} && ${DEBUG-} = 1 ]]; then
+    #      read -ra ghvars < <(compgen -A variable -X '!US_*') &&
+    #      >&2 declare -p "${ghvars[@]}" || :
+    #      unset ghvars
+    #    fi
 
-        bash "${US_CONFIGURE_SCRIPT:-./configure}.bash" &&
-        \builtin . "${XREDO_ENV:?}" || return
-      ;; ( * )
-        >&2 echo "Config build required"
-        exit 1
-        # : "${BUILD_SELECT_SH:=.build-select.sh}"
-    esac
+    #    bash "${US_CONFIGURE_SCRIPT:-./configure}.bash" &&
+    #    \builtin . "${XREDO_ENV:?}" || return
+    #  ;; ( * )
+    #    >&2 echo "Config build required"
+    #    exit 1
+    #    # : "${BUILD_SELECT_SH:=.build-select.sh}"
+    #esac
+    TODO 'integrate with configure from the redo side'
   fi
 }
 
