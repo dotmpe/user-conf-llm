@@ -20,8 +20,13 @@ Main convention file
 
 - [Project conventions](CONVENTIONS.md)
 - [Project conventions (baseline edition)](CONVENTIONS+baseline.md)
+  A separate project CONVENTIONS document, for more bare-bone projects.
 - [Project conventions (minimal edition)](CONVENTIONS+minimal.md)
+  A more minimal local project CONVENTIONS document.
 - [Project conventions (skeleton edition)](CONVENTIONS+skeleton.md)
+  A sketch or draft to use for other projects, and later work into version
+  for user-tools or user-conf template(d) projects.
+
 - [Project conventions (+User-Tools)](USER_TOOLS_CONVENTIONS.md)
 
 - [Project documentation directory](MANIFEST.md) (*this file*)
